@@ -29,8 +29,7 @@ public class ReleasingInputStream extends DelegatingInputStream
 
         if (method != null)
         {
-            //TODO(pablo.kraan): HTTPCLIENT - release connection
-            //method.releaseConnection();
+            method.getEntity().getContent().close();
         }
     }
 }
