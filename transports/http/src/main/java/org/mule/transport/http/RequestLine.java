@@ -16,6 +16,7 @@ import java.util.StringTokenizer;
 import org.apache.http.HttpException;
 import org.apache.http.HttpVersion;
 import org.apache.http.ProtocolException;
+import org.apache.http.message.BasicLineParser;
 
 /**
  * Defines a HTTP request-line, consisting of method name, URI and protocol.
@@ -75,8 +76,7 @@ public class RequestLine
     public RequestLine(final String method, final String uri, final String httpversion)
             throws ProtocolException
     {
-        //TODO(pablo.kraan): HTTPCLIENT - parse HTTP version instead of using the hardcoded value
-        this(method, uri, HttpVersion.HTTP_1_1);
+        this(method, uri, (HttpVersion) BasicLineParser.parseProtocolVersion(httpversion, null));
     }
 
     /*

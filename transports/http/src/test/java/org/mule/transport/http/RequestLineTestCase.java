@@ -37,4 +37,11 @@ public class RequestLineTestCase extends AbstractMuleTestCase
         RequestLine requestLine = new RequestLine("GET", "/?param1=value1", HttpVersion.HTTP_1_1);
         assertThat(requestLine.getUrlWithoutParams(), is("/"));
     }
+    
+    @Test
+    public void parseHttpVersion()
+    {
+        assertThat(new RequestLine("GET", "/?param1=value1", HttpVersion.HTTP_1_1).getHttpVersion(), is(HttpVersion.HTTP_1_1));
+        assertThat(new RequestLine("GET", "/?param1=value1", HttpVersion.HTTP_1_0).getHttpVersion(), is(HttpVersion.HTTP_1_0));
+    }
 }
