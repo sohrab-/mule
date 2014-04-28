@@ -6,6 +6,13 @@
  */
 package org.mule.transport.http.components;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import org.mule.DefaultMuleMessage;
 import org.mule.api.MuleContext;
 import org.mule.api.MuleEvent;
@@ -32,21 +39,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.Header;
+import org.apache.http.Header;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.impl.cookie.BasicClientCookie;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @SmallTest
 public class HttpResponseBuilderTestCase extends AbstractMuleTestCase
@@ -355,8 +355,8 @@ public class HttpResponseBuilderTestCase extends AbstractMuleTestCase
         outboundProperties.put(HttpConstants.HEADER_CACHE_CONTROL, "max-age=3600");
         outboundProperties.put(MuleProperties.MULE_ENCODING_PROPERTY, "UTF-8");
         Cookie[] cookies = new Cookie[2];
-        cookies[0] = new Cookie(null, "clientId", "2");
-        cookies[1] = new Cookie(null, "category", "premium");
+        cookies[0] = new BasicClientCookie("clientId", "2");
+        cookies[1] = new BasicClientCookie("category", "premium");
         outboundProperties.put(HttpConstants.HEADER_COOKIE_SET, cookies);
 
         Set<String> propertyNames =  outboundProperties.keySet();
@@ -376,11 +376,11 @@ public class HttpResponseBuilderTestCase extends AbstractMuleTestCase
             {
                 if(header.getValue().startsWith(cookies[0].getName()))
                 {
-                    assertEquals(cookies[0].toString(), header.getValue());
+                    assertEquals(cookies[0].getName()+ "=" + cookies[0].getValue(), header.getValue());
                 }
                 else
                 {
-                    assertEquals(cookies[1].toString(), header.getValue());
+                    assertEquals(cookies[1].getName()+ "=" + cookies[1].getValue(), header.getValue());
                 }
 
             }

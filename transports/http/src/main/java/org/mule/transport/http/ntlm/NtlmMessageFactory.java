@@ -12,7 +12,7 @@ import jcifs.ntlmssp.Type1Message;
 import jcifs.ntlmssp.Type2Message;
 import jcifs.ntlmssp.Type3Message;
 import jcifs.util.Base64;
-import org.apache.commons.httpclient.NTCredentials;
+import org.apache.http.auth.NTCredentials;
 
 public class NtlmMessageFactory
 {
@@ -89,6 +89,6 @@ public class NtlmMessageFactory
     public Type3Message createType3Message(NTCredentials ntCredentials, Type2Message type2Message)
     {
         return new Type3Message(type2Message, ntCredentials.getPassword(), type2Message.getTarget(),
-                                ntCredentials.getUserName(), ntCredentials.getHost(), DEFAULT_TYPE_3_MESSAGE_FLAGS);
+                                ntCredentials.getUserName(), ntCredentials.getWorkstation(), DEFAULT_TYPE_3_MESSAGE_FLAGS);
     }
 }

@@ -46,9 +46,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.resource.spi.work.Work;
 
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpVersion;
-
 /**
  * <code>HttpMessageReceiver</code> is a simple http server that can be used to
  * listen for HTTP requests on a particular port.
@@ -194,7 +191,8 @@ public class OldHttpMessageReceiver extends TcpMessageReceiver
                         }
                         else
                         {
-                            conn.writeResponse(buildFailureResponse(request.getRequestLine().getHttpVersion(), httpStatus, e.getMessage()));
+                            //TODO(pablo.kraan): HTTPCLIENT - fix this
+                            //conn.writeResponse(buildFailureResponse(request.getRequestLine().getHttpVersion(), httpStatus, e.getMessage()));
                         }
                         break;
                     }
@@ -275,7 +273,9 @@ public class OldHttpMessageReceiver extends TcpMessageReceiver
             // determine if the request path on this request denotes a different receiver
             final MessageReceiver receiver = getTargetReceiver(message, endpoint);
 
-            HttpResponse response;
+
+            //TODO(pablo.kraan): HTTPCLIENT - remove this init
+            HttpResponse response = null;
             // the response only needs to be transformed explicitly if
             // A) the request was not served or B) a null result was returned
             if (receiver != null)
@@ -343,30 +343,32 @@ public class OldHttpMessageReceiver extends TcpMessageReceiver
                     response = transformResponse(returnMessage, returnEvent);
                 }
 
-                response.setupKeepAliveFromRequestVersion(request.getRequestLine().getHttpVersion());
+                //TODO(pablo.kraan): HTTPCLIENT - fix this
+                //response.setupKeepAliveFromRequestVersion(request.getRequestLine().getHttpVersion());
                 HttpConnector httpConnector = (HttpConnector) connector;
                 response.disableKeepAlive(!httpConnector.isKeepAlive());
 
-                Header connectionHeader = request.getFirstHeader("Connection");
-                if (connectionHeader != null)
-                {
-                    String value = connectionHeader.getValue();
-                    boolean endpointOverride = getEndpointKeepAliveValue(endpoint);
-                    if ("keep-alive".equalsIgnoreCase(value) && endpointOverride)
-                    {
-                        response.setKeepAlive(true);
-
-                        if (response.getHttpVersion().equals(HttpVersion.HTTP_1_0))
-                        {
-                            connectionHeader = new Header(HttpConstants.HEADER_CONNECTION, "Keep-Alive");
-                            response.setHeader(connectionHeader);
-                        }
-                    }
-                    else if ("close".equalsIgnoreCase(value))
-                    {
-                        response.setKeepAlive(false);
-                    }
-                }
+                //TODO(pablo.kraan): HTTPCLIENT - fix this
+                //Header connectionHeader = request.getFirstHeader("Connection");
+                //if (connectionHeader != null)
+                //{
+                //    String value = connectionHeader.getValue();
+                //    boolean endpointOverride = getEndpointKeepAliveValue(endpoint);
+                //    if ("keep-alive".equalsIgnoreCase(value) && endpointOverride)
+                //    {
+                //        response.setKeepAlive(true);
+                //
+                //        if (response.getHttpVersion().equals(HttpVersion.HTTP_1_0))
+                //        {
+                //            connectionHeader = new Header(HttpConstants.HEADER_CONNECTION, "Keep-Alive");
+                //            response.setHeader(connectionHeader);
+                //        }
+                //    }
+                //    else if ("close".equalsIgnoreCase(value))
+                //    {
+                //        response.setKeepAlive(false);
+                //    }
+                //}
             }
             else
             {
@@ -374,8 +376,9 @@ public class OldHttpMessageReceiver extends TcpMessageReceiver
                 String failedPath = String.format("%s://%s:%d%s",
                                                   uri.getScheme(), uri.getHost(), uri.getPort(),
                                                   message.getInboundProperty(HttpConnector.HTTP_REQUEST_PATH_PROPERTY));
-                response = buildFailureResponse(request.getRequestLine().getHttpVersion(), HttpConstants.SC_NOT_FOUND,
-                                                HttpMessages.cannotBindToAddress(failedPath).toString());
+                //TODO(pablo.kraan): HTTPCLIENT - fix this
+                //response = buildFailureResponse(request.getRequestLine().getHttpVersion(), HttpConstants.SC_NOT_FOUND,
+                //                                HttpMessages.cannotBindToAddress(failedPath).toString());
             }
             return response;
         }
@@ -401,7 +404,8 @@ public class OldHttpMessageReceiver extends TcpMessageReceiver
             MuleEvent event = new DefaultMuleEvent(message, (InboundEndpoint) endpoint, flowConstruct);
             OptimizedRequestContext.unsafeSetEvent(event);
             HttpResponse response = new HttpResponse();
-            response.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_METHOD_NOT_ALLOWED);
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //response.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_METHOD_NOT_ALLOWED);
             response.setBody(HttpMessages.methodNotAllowed(method).toString() + HttpConstants.CRLF);
             return transformResponse(response, event);
         }
@@ -412,7 +416,8 @@ public class OldHttpMessageReceiver extends TcpMessageReceiver
             MuleEvent event = new DefaultMuleEvent(message, (InboundEndpoint) endpoint, flowConstruct);
             OptimizedRequestContext.unsafeSetEvent(event);
             HttpResponse response = new HttpResponse();
-            response.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_BAD_REQUEST);
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //response.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_BAD_REQUEST);
             response.setBody(HttpMessages.malformedSyntax().toString() + HttpConstants.CRLF);
             return transformResponse(response, event);
         }
@@ -425,24 +430,25 @@ public class OldHttpMessageReceiver extends TcpMessageReceiver
             // according to rfc 2616 and http 1.1
             // the processing will continue and the request will be fully
             // read immediately after
-            HttpVersion requestVersion = requestLine.getHttpVersion();
-            if (HttpVersion.HTTP_1_1.equals(requestVersion))
-            {
-                Header expectHeader = request.getFirstHeader(HttpConstants.HEADER_EXPECT);
-                if (expectHeader != null)
-                {
-                    String expectHeaderValue = expectHeader.getValue();
-                    if (HttpConstants.HEADER_EXPECT_CONTINUE_REQUEST_VALUE.equals(expectHeaderValue))
-                    {
-                        HttpResponse expected = new HttpResponse();
-                        expected.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_CONTINUE);
-                        final DefaultMuleEvent event = new DefaultMuleEvent(new DefaultMuleMessage(expected,
-                                                                                                   getEndpoint().getMuleContext()), (InboundEndpoint) endpoint, flowConstruct);
-                        RequestContext.setEvent(event);
-                        conn.writeResponse(transformResponse(expected, event));
-                    }
-                }
-            }
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //HttpVersion requestVersion = requestLine.getHttpVersion();
+            //if (HttpVersion.HTTP_1_1.equals(requestVersion))
+            //{
+            //    Header expectHeader = request.getFirstHeader(HttpConstants.HEADER_EXPECT);
+            //    if (expectHeader != null)
+            //    {
+            //        String expectHeaderValue = expectHeader.getValue();
+            //        if (HttpConstants.HEADER_EXPECT_CONTINUE_REQUEST_VALUE.equals(expectHeaderValue))
+            //        {
+            //            HttpResponse expected = new HttpResponse();
+            //            expected.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_CONTINUE);
+            //            final DefaultMuleEvent event = new DefaultMuleEvent(new DefaultMuleMessage(expected,
+            //                                                                                       getEndpoint().getMuleContext()), (InboundEndpoint) endpoint, flowConstruct);
+            //            RequestContext.setEvent(event);
+            //            conn.writeResponse(transformResponse(expected, event));
+            //        }
+            //    }
+            //}
         }
 
         private HttpResponse buildFailureResponse(MuleEvent event, String description, int httpStatusCode) throws MuleException
@@ -452,17 +458,18 @@ public class OldHttpMessageReceiver extends TcpMessageReceiver
             return transformResponse(event.getMessage(), event);
         }
 
-        protected HttpResponse buildFailureResponse(HttpVersion version, int statusCode, String description) throws MuleException
-        {
-            HttpResponse response = new HttpResponse();
-            response.setStatusLine(version, statusCode);
-            response.setBody(description);
-            DefaultMuleEvent event = new DefaultMuleEvent(new DefaultMuleMessage(response,
-                                                                                 getEndpoint().getMuleContext()), (InboundEndpoint) endpoint, flowConstruct);
-            RequestContext.setEvent(event);
-            // The DefaultResponseTransformer will set the necessary headers
-            return transformResponse(response, event);
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //protected HttpResponse buildFailureResponse(HttpVersion version, int statusCode, String description) throws MuleException
+        //{
+        //    HttpResponse response = new HttpResponse();
+        //    response.setStatusLine(version, statusCode);
+        //    response.setBody(description);
+        //    DefaultMuleEvent event = new DefaultMuleEvent(new DefaultMuleMessage(response,
+        //                                                                         getEndpoint().getMuleContext()), (InboundEndpoint) endpoint, flowConstruct);
+        //    RequestContext.setEvent(event);
+        //  //  The DefaultResponseTransformer will set the necessary headers
+            //return transformResponse(response, event);
+        //}
 
         protected void preRouteMessage(MuleMessage message) throws MessagingException
         {

@@ -8,7 +8,6 @@ package org.mule.transport.http.issues;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import org.mule.api.MuleEventContext;
 import org.mule.api.MuleMessage;
 import org.mule.api.client.MuleClient;
@@ -20,12 +19,11 @@ import org.mule.tck.junit4.rule.DynamicPort;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpVersion;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.RequestEntity;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.params.HttpClientParams;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -67,9 +65,10 @@ public class HttpMessageReceiverMule4456TestCase extends AbstractServiceAndFlowT
     protected void doSetUp() throws Exception
     {
         super.doSetUp();
-        HttpClientParams params = new HttpClientParams();
-        params.setVersion(HttpVersion.HTTP_1_1);
-        httpClient = new HttpClient(params);
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //HttpClientParams params = new HttpClientParams();
+        //params.setVersion(HttpVersion.HTTP_1_1);
+        httpClient = HttpClients.createMinimal();
         muleClient = muleContext.getClient();
     }
 
@@ -87,11 +86,11 @@ public class HttpMessageReceiverMule4456TestCase extends AbstractServiceAndFlowT
             }
         });
 
-        PostMethod request = new PostMethod("http://localhost:" + dynamicPort1.getNumber());
-        RequestEntity entity = new StringRequestEntity(MESSAGE, "text/plain",
-            muleContext.getConfiguration().getDefaultEncoding());
-        request.setRequestEntity(entity);
-        httpClient.executeMethod(request);
+        HttpPost request = new HttpPost("http://localhost:" + dynamicPort1.getNumber());
+        StringEntity entity = new StringEntity(MESSAGE, "text/plain", muleContext.getConfiguration().getDefaultEncoding());
+        request.setEntity(entity);
+
+        httpClient.execute(request);
 
         MuleMessage message = muleClient.request("vm://out", 1000);
         assertNotNull(message);
@@ -112,12 +111,12 @@ public class HttpMessageReceiverMule4456TestCase extends AbstractServiceAndFlowT
             }
         });
 
-        PostMethod request = new PostMethod("http://localhost:" + dynamicPort2.getNumber());
-        RequestEntity entity = new StringRequestEntity(MESSAGE, "text/plain", muleContext.getConfiguration()
-            .getDefaultEncoding());
-        request.setRequestEntity(entity);
+        HttpPost request = new HttpPost("http://localhost:" + dynamicPort2.getNumber());
+        StringEntity entity = new StringEntity(MESSAGE, "text/plain", muleContext.getConfiguration().getDefaultEncoding());
+        request.setEntity(entity);
 
-        httpClient.executeMethod(request);
+        httpClient.execute(request);
+
         MuleMessage message = muleClient.request("vm://out", 1000);
         assertNotNull(message);
         assertEquals(MESSAGE, message.getPayloadAsString());

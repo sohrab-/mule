@@ -6,44 +6,37 @@
  */
 package org.mule.transport.http;
 
-import org.mule.api.MuleEvent;
-import org.mule.api.transport.OutputHandler;
-
-import java.io.IOException;
-import java.io.OutputStream;
-
-import org.apache.commons.httpclient.methods.RequestEntity;
-
-public class StreamPayloadRequestEntity implements RequestEntity
+//TODO(pablo.kraan): HTTPCLIENT - fix this
+public class StreamPayloadRequestEntity //implements RequestEntity
 {
-    private OutputHandler outputHandler;
-    private MuleEvent event;
-
-    public StreamPayloadRequestEntity(OutputHandler outputHandler, MuleEvent event)
-    {
-        this.outputHandler = outputHandler;
-        this.event = event;
-    }
-
-    public boolean isRepeatable()
-    {
-        return false;
-    }
-
-    public void writeRequest(OutputStream outputStream) throws IOException
-    {
-        outputHandler.write(event, outputStream);
-        outputStream.flush();
-    }
-
-    public long getContentLength()
-    {
-        return -1L;
-    }
-
-    public String getContentType()
-    {
-        return event.getMessage().getOutboundProperty(HttpConstants.HEADER_CONTENT_TYPE, HttpConstants.DEFAULT_CONTENT_TYPE);
-    }
+    //private OutputHandler outputHandler;
+    //private MuleEvent event;
+    //
+    //public StreamPayloadRequestEntity(OutputHandler outputHandler, MuleEvent event)
+    //{
+    //    this.outputHandler = outputHandler;
+    //    this.event = event;
+    //}
+    //
+    //public boolean isRepeatable()
+    //{
+    //    return false;
+    //}
+    //
+    //public void writeRequest(OutputStream outputStream) throws IOException
+    //{
+    //    outputHandler.write(event, outputStream);
+    //    outputStream.flush();
+    //}
+    //
+    //public long getContentLength()
+    //{
+    //    return -1L;
+    //}
+    //
+    //public String getContentType()
+    //{
+    //    return event.getMessage().getOutboundProperty(HttpConstants.HEADER_CONTENT_TYPE, HttpConstants.DEFAULT_CONTENT_TYPE);
+    //}
 }
 

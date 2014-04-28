@@ -19,8 +19,8 @@ import org.mule.tck.util.endpoint.InboundEndpointWrapper;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.GetMethod;
 import org.junit.Rule;
 import org.junit.Test;
 

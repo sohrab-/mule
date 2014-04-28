@@ -12,10 +12,10 @@ import org.mule.transport.http.HttpConstants;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.UsernamePasswordCredentials;
+import org.apache.http.client.auth.AuthScope;
+import org.apache.http.client.methods.GetMethod;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;

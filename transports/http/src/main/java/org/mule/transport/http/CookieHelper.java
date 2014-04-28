@@ -23,16 +23,20 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimeZone;
 
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.cookie.CookiePolicy;
-import org.apache.commons.httpclient.cookie.CookieSpec;
-import org.apache.commons.httpclient.cookie.MalformedCookieException;
-import org.apache.commons.httpclient.cookie.NetscapeDraftSpec;
-import org.apache.commons.httpclient.cookie.RFC2109Spec;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.Header;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.params.CookiePolicy;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.cookie.CookieOrigin;
+import org.apache.http.cookie.CookieSpec;
+import org.apache.http.cookie.MalformedCookieException;
+import org.apache.http.impl.cookie.BasicClientCookie;
+import org.apache.http.impl.cookie.BestMatchSpec;
+import org.apache.http.impl.cookie.NetscapeDraftSpec;
+import org.apache.http.impl.cookie.RFC2109Spec;
+import org.apache.http.message.BasicHeader;
 import org.apache.tomcat.util.http.Cookies;
 import org.apache.tomcat.util.http.MimeHeaders;
 import org.apache.tomcat.util.http.ServerCookie;
@@ -134,13 +138,18 @@ public class CookieHelper
      */
     public static CookieSpec getCookieSpec(String spec)
     {
+        //TODO(pablo.kraan): HTTPCLIENT - check if its possible to generalize this
         if (spec != null && spec.equalsIgnoreCase(HttpConnector.COOKIE_SPEC_NETSCAPE))
         {
             return new NetscapeDraftSpec();
         }
-        else
+        else if (spec != null && spec.equalsIgnoreCase(HttpConnector.COOKIE_SPEC_RFC2109))
         {
             return new RFC2109Spec();
+        }
+        else
+        {
+            return new BestMatchSpec();
         }
     }
 
@@ -219,7 +228,10 @@ public class CookieHelper
         int port = getPortFromURI(uri);
         String path = uri.getPath();
 
-        return cookieSpec.parse(host, port, path, secure, cookieHeaderValue);
+        CookieOrigin origin = new CookieOrigin(host, port, path, secure);
+
+        List<Cookie> cookies = cookieSpec.parse(new BasicHeader("Set-Cookie", cookieHeaderValue), origin);
+        return cookies.toArray(new Cookie[cookies.size()]);
     }
 
     private static int getPortFromURI(URI uri) throws MalformedCookieException
@@ -285,9 +297,10 @@ public class CookieHelper
             cookies[i] = transformServerCookieToClientCookie(serverCookie);
             if (uri != null)
             {
-                cookies[i].setSecure(uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("https"));
-                cookies[i].setDomain(uri.getHost());
-                cookies[i].setPath(uri.getPath());
+                //TODO(pablo.kraan): HTTPCLIENT - parse cookie
+                //    cookies[i].setSecure(uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("https"));
+            //    cookies[i].setDomain(uri.getHost());
+            //    cookies[i].setPath(uri.getPath());
             }
         }
         return cookies;
@@ -301,11 +314,14 @@ public class CookieHelper
      */
     protected static Cookie transformServerCookieToClientCookie(ServerCookie serverCookie)
     {
-        Cookie clientCookie = new Cookie(serverCookie.getDomain().toString(), serverCookie.getName()
-            .toString(), serverCookie.getValue().toString(), serverCookie.getPath().toString(),
-            serverCookie.getMaxAge(), serverCookie.getSecure());
+        BasicClientCookie clientCookie = new BasicClientCookie(serverCookie.getName().toString(), serverCookie.getValue().toString());
+        clientCookie.setDomain(serverCookie.getDomain().toString());
+        clientCookie.setPath(serverCookie.getPath().toString());
+        clientCookie.setExpiryDate(new Date(System.currentTimeMillis() + serverCookie.getMaxAge() * 1000L));
+        clientCookie.setSecure(serverCookie.getSecure());
         clientCookie.setComment(serverCookie.getComment().toString());
         clientCookie.setVersion(serverCookie.getVersion());
+
         return clientCookie;
     }
 
@@ -317,7 +333,7 @@ public class CookieHelper
     {
         StringBuffer sb = new StringBuffer();
         ServerCookie.appendCookieValue(sb, cookie.getVersion(), cookie.getName(), cookie.getValue(),
-            cookie.getPath(), cookie.getDomain(), cookie.getComment(), -1, cookie.getSecure());
+            cookie.getPath(), cookie.getDomain(), cookie.getComment(), -1, cookie.isSecure());
 
         Date expiryDate = cookie.getExpiryDate();
         if (expiryDate != null)
@@ -459,19 +475,21 @@ enum CookieStorageType
 
             // domain, path, secure (https) and expiry are handled in method
             // CookieHelper.addCookiesToClient()
-            final Cookie newSessionCookie = new Cookie(null, cookieName, cookieValue);
-            final Cookie[] mergedCookiesArray;
-            if (sessionIndex >= 0)
-            {
-                preExistentCookiesArray[sessionIndex] = newSessionCookie;
-                mergedCookiesArray = preExistentCookiesArray;
-            }
-            else
-            {
-                Cookie[] newSessionCookieArray = new Cookie[]{newSessionCookie};
-                mergedCookiesArray = concatenateCookies(preExistentCookiesArray, newSessionCookieArray);
-            }
-            return mergedCookiesArray;
+            //TODO(pablo.kraan): HTTPCLIENT - parse cookie
+            //final Cookie newSessionCookie = new Cookie(null, cookieName, cookieValue);
+            //final Cookie[] mergedCookiesArray;
+            //if (sessionIndex >= 0)
+            //{
+            //    preExistentCookiesArray[sessionIndex] = newSessionCookie;
+            //    mergedCookiesArray = preExistentCookiesArray;
+            //}
+            //else
+            //{
+            //    Cookie[] newSessionCookieArray = new Cookie[]{newSessionCookie};
+            //    mergedCookiesArray = concatenateCookies(preExistentCookiesArray, newSessionCookieArray);
+            //}
+            //return mergedCookiesArray;
+            return null;
         }
 
         protected Cookie[] concatenateCookies(Cookie[] cookies1, Cookie[] cookies2)
@@ -537,13 +555,14 @@ enum CookieStorageType
             {
                 String host = destinationUri.getHost();
                 String path = destinationUri.getPath();
-                for (Cookie cookie : cookies)
-                {
-                    client.getState().addCookie(
-                        new Cookie(host, cookie.getName(), cookie.getValue(), path, cookie.getExpiryDate(),
-                            cookie.getSecure()));
-                }
-                client.getParams().setCookiePolicy(CookieHelper.getCookiePolicy(policy));
+                //TODO(pablo.kraan): HTTPCLIENT - parse cookie
+                //for (Cookie cookie : cookies)
+                //{
+                //    client.getState().addCookie(
+                //        new Cookie(host, cookie.getName(), cookie.getValue(), path, cookie.getExpiryDate(),
+                //            cookie.getSecure()));
+                //}
+                //client.getParams().setCookiePolicy(CookieHelper.getCookiePolicy(policy));
             }
         }
 
@@ -589,10 +608,7 @@ enum CookieStorageType
                 int i = 0;
                 for (Entry<String, String> cookieEntry : newCookiesMap.entrySet())
                 {
-                    Cookie cookie = new Cookie();
-                    cookie.setName(cookieEntry.getKey());
-                    cookie.setValue(cookieEntry.getValue());
-                    cookiesArray[i++] = cookie;
+                    cookiesArray[i++] = new BasicClientCookie(cookieEntry.getKey(), cookieEntry.getValue());
                 }
                 return putAndMergeCookie(preExistentCookies, cookiesArray);
             }
@@ -653,7 +669,8 @@ enum CookieStorageType
         {
             Map<String, String> cookieMap = (Map<String, String>) cookiesObject;
 
-            client.getParams().setCookiePolicy(CookieHelper.getCookiePolicy(policy));
+            //TODO(pablo.kraan): HTTPCLIENT - set cookie policy
+            //client.getParams().setCookiePolicy(CookieHelper.getCookiePolicy(policy));
 
             String host = destinationUri.getHost();
             String path = destinationUri.getPath();
@@ -672,9 +689,9 @@ enum CookieStorageType
                 {
                     value = cookieValue;
                 }
-
-                Cookie cookie = new Cookie(host, key, value, path, null, false);
-                client.getState().addCookie(cookie);
+                //TODO(pablo.kraan): HTTPCLIENT - parse cookie
+                //Cookie cookie = new Cookie(host, key, value, path, null, false);
+                //client.getState().addCookie(cookie);
             }
 
         }
@@ -718,9 +735,7 @@ enum CookieStorageType
             int i = 0;
             for (Entry<String, String> cookieEntry : cookieMap.entrySet())
             {
-                Cookie cookie = new Cookie();
-                cookie.setName(cookieEntry.getKey());
-                cookie.setValue(cookieEntry.getValue());
+                Cookie cookie = new BasicClientCookie(cookieEntry.getKey(), cookieEntry.getValue());
                 arrayOfCookies[i++] = cookie;
             }
             return arrayOfCookies;

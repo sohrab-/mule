@@ -29,18 +29,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HeaderElement;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpVersion;
-import org.apache.commons.httpclient.NameValuePair;
-import org.apache.commons.httpclient.cookie.MalformedCookieException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
+import org.apache.http.NameValuePair;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.cookie.MalformedCookieException;
+import org.apache.http.message.BasicHeader;
 
 public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
 {
+
     private static Log log = LogFactory.getLog(HttpMuleMessageFactory.class);
     private static final String DEFAULT_ENCODING = "UTF-8";
 
@@ -64,7 +65,7 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
     @Override
     protected Class<?>[] getSupportedTransportMessageTypes()
     {
-        return new Class[]{HttpRequest.class, HttpMethod.class};
+        return new Class[] {HttpRequest.class, org.apache.http.HttpResponse.class};
     }
 
     @Override
@@ -74,9 +75,9 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
         {
             return extractPayloadFromHttpRequest((HttpRequest) transportMessage);
         }
-        else if (transportMessage instanceof HttpMethod)
+        else if (transportMessage instanceof org.apache.http.HttpResponse)
         {
-            return extractPayloadFromHttpMethod((HttpMethod) transportMessage);
+            return extractPayloadFromHttpResponse((org.apache.http.HttpResponse) transportMessage);
         }
         else
         {
@@ -110,12 +111,12 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
         return body;
     }
 
-    protected Object extractPayloadFromHttpMethod(HttpMethod httpMethod) throws IOException
+    protected Object extractPayloadFromHttpResponse(org.apache.http.HttpResponse httpResponse) throws IOException
     {
-        InputStream body = httpMethod.getResponseBodyAsStream();
+        InputStream body = httpResponse.getEntity().getContent();
         if (body != null)
         {
-            return new ReleasingInputStream(body, httpMethod);
+            return new ReleasingInputStream(body, httpResponse);
         }
         else
         {
@@ -126,11 +127,12 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
     @Override
     protected void addProperties(DefaultMuleMessage message, Object transportMessage) throws Exception
     {
-        String method;
-        HttpVersion httpVersion;
+        //TODO(pablo.kraan): HTTPCLIENT - method is being added as a property, but seems like there is no method on the HttpResponse
+        String method = null;
+        ProtocolVersion httpVersion;
         String uri;
         String statusCode = null;
-        Map<String, Object> headers;  
+        Map<String, Object> headers;
         Map<String, Object> httpHeaders = new HashMap<String, Object>();
         Map<String, Object> queryParameters = new HashMap<String, Object>();
 
@@ -143,14 +145,16 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
             headers = convertHeadersToMap(httpRequest.getHeaders(), uri);
             convertMultiPartHeaders(headers);
         }
-        else if (transportMessage instanceof HttpMethod)
+        else if (transportMessage instanceof org.apache.http.HttpResponse)
         {
-            HttpMethod httpMethod = (HttpMethod) transportMessage;
-            method = httpMethod.getName();
-            httpVersion = HttpVersion.parse(httpMethod.getStatusLine().getHttpVersion());
-            uri = httpMethod.getURI().toString();
-            statusCode = String.valueOf(httpMethod.getStatusCode());
-            headers = convertHeadersToMap(httpMethod.getResponseHeaders(), uri);
+            org.apache.http.HttpResponse httpMethod = (org.apache.http.HttpResponse) transportMessage;
+            //TODO(pablo.kraan): HTTPCLIENT - are these values needed?
+            //method = httpMethod.getName();
+            //uri = httpMethod.getURI().toString();
+            httpVersion = httpMethod.getStatusLine().getProtocolVersion();
+            uri = null;
+            statusCode = String.valueOf(httpMethod.getStatusLine().getStatusCode());
+            headers = convertHeadersToMap(httpMethod.getAllHeaders(), uri);
         }
         else
         {
@@ -165,11 +169,15 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
         httpHeaders.put(HttpConnector.HTTP_HEADERS, new HashMap<String, Object>(headers));
 
         String encoding = getEncoding(headers);
-        
-        queryParameters.put(HttpConnector.HTTP_QUERY_PARAMS, processQueryParams(uri, encoding));
 
-        //Make any URI params available ans inbound message headers
-        addUriParamsAsHeaders(headers, uri);
+        //TODO(pablo.kraan): HTTPCLIENT - is this needed when payload is a HttpResponse
+        if (uri != null)
+        {
+            queryParameters.put(HttpConnector.HTTP_QUERY_PARAMS, processQueryParams(uri, encoding));
+
+            //Make any URI params available ans inbound message headers
+            addUriParamsAsHeaders(headers, uri);
+        }
 
         headers.put(HttpConnector.HTTP_METHOD_PROPERTY, method);
         headers.put(HttpConnector.HTTP_REQUEST_PROPERTY, uri);
@@ -297,7 +305,7 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
         {
             // use HttpClient classes to parse the charset part from the Content-Type
             // header (e.g. "text/html; charset=UTF-16BE")
-            Header contentTypeHeader = new Header(HttpConstants.HEADER_CONTENT_TYPE,
+            Header contentTypeHeader = new BasicHeader(HttpConstants.HEADER_CONTENT_TYPE,
                                                   contentType.toString());
             HeaderElement values[] = contentTypeHeader.getElements();
             if (values.length == 1)
@@ -311,7 +319,7 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
         }
         return encoding;
     }
-    
+
     private void initEncoding(MuleMessage message, String encoding)
     {
         message.setEncoding(encoding);
@@ -336,8 +344,8 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
         else
         {
             headerValue = (headers.get(HttpConstants.HEADER_CONNECTION) != null
-                    ? Boolean.TRUE.toString()
-                    : Boolean.FALSE.toString());
+                           ? Boolean.TRUE.toString()
+                           : Boolean.FALSE.toString());
         }
 
         headers.put(HttpConstants.HEADER_CONNECTION, headerValue);
@@ -354,23 +362,23 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
     {
         int i = uri.indexOf("?");
         String queryString = "";
-        if(i > -1)
+        if (i > -1)
         {
             queryString = uri.substring(i + 1);
             headers.putAll(PropertiesUtils.getPropertiesFromQueryString(queryString));
         }
         headers.put(HttpConnector.HTTP_QUERY_STRING, queryString);
     }
-    
+
     protected Map<String, Object> processQueryParams(String uri, String encoding) throws UnsupportedEncodingException
     {
         Map<String, Object> httpParams = new HashMap<String, Object>();
-        
+
         int i = uri.indexOf("?");
-        if(i > -1)
+        if (i > -1)
         {
             String queryString = uri.substring(i + 1);
-            for (StringTokenizer st = new StringTokenizer(queryString, "&"); st.hasMoreTokens();)
+            for (StringTokenizer st = new StringTokenizer(queryString, "&"); st.hasMoreTokens(); )
             {
                 String token = st.nextToken();
                 int idx = token.indexOf('=');
@@ -381,11 +389,11 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
                 else if (idx > 0)
                 {
                     addQueryParamToMap(httpParams, unescape(token.substring(0, idx), encoding),
-                        unescape(token.substring(idx + 1), encoding));
+                                       unescape(token.substring(idx + 1), encoding));
                 }
             }
         }
-            
+
         return httpParams;
     }
 
@@ -409,16 +417,15 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
             httpParams.put(key, list);
         }
     }
-    
+
     private String unescape(String escapedValue, String encoding) throws UnsupportedEncodingException
     {
-        if(escapedValue != null)
+        if (escapedValue != null)
         {
             return URLDecoder.decode(escapedValue, encoding);
         }
         return escapedValue;
     }
-    
 
     protected void convertMultiPartHeaders(Map<String, Object> headers)
     {

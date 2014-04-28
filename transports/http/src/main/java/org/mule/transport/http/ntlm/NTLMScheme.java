@@ -6,21 +6,21 @@
  */
 package org.mule.transport.http.ntlm;
 
+import static jcifs.util.Base64.encode;
+import org.mule.transport.http.HttpRequest;
+
 import jcifs.ntlmssp.NtlmMessage;
 import jcifs.ntlmssp.Type2Message;
-import org.apache.commons.httpclient.Credentials;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.NTCredentials;
-import org.apache.commons.httpclient.auth.AuthChallengeParser;
-import org.apache.commons.httpclient.auth.AuthScheme;
-import org.apache.commons.httpclient.auth.AuthenticationException;
-import org.apache.commons.httpclient.auth.InvalidCredentialsException;
-import org.apache.commons.httpclient.auth.MalformedChallengeException;
-
-import static jcifs.util.Base64.encode;
+import org.apache.http.Header;
+import org.apache.http.auth.AuthScheme;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.InvalidCredentialsException;
+import org.apache.http.auth.MalformedChallengeException;
+import org.apache.http.auth.NTCredentials;
 
 /**
- * Reimplements {@link org.apache.commons.httpclient.auth.NTLMScheme} using JCIFS
+ * Reimplements {@link NTLMScheme} using JCIFS
  * org.apache.commons.httpclient.auth.NTLMScheme. <p>
  * This class has to be registered manually in order to be used:
  * <code>
@@ -52,7 +52,7 @@ public class NTLMScheme implements AuthScheme
      */
     private final NtlmMessageFactory ntlmMessageFactory = new NtlmMessageFactory();
 
-    public String authenticate(Credentials credentials, HttpMethod method) throws AuthenticationException
+    public String authenticate(Credentials credentials, HttpRequest method) throws AuthenticationException
     {
         if (authenticationState == AUTHENTICATION_STATE.UNINITIATED)
         {
@@ -134,6 +134,11 @@ public class NTLMScheme implements AuthScheme
         return null;
     }
 
+    public void processChallenge(Header header) throws MalformedChallengeException
+    {
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+    }
+
     /**
      * Returns textual designation of the NTLM authentication scheme.
      *
@@ -155,6 +160,12 @@ public class NTLMScheme implements AuthScheme
         return authenticationState == AUTHENTICATION_STATE.TYPE3_MSG_GENERATED || authenticationState == AUTHENTICATION_STATE.FAILED;
     }
 
+    public Header authenticate(Credentials credentials, org.apache.http.HttpRequest httpRequest) throws AuthenticationException
+    {
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        return null;
+    }
+
     /**
      * Returns <tt>true</tt>. NTLM authentication scheme is connection based.
      *
@@ -165,35 +176,36 @@ public class NTLMScheme implements AuthScheme
         return true;
     }
 
-    /**
-     * Processes the NTLM challenge.
-     *
-     * @param challenge the challenge string
-     * @throws MalformedChallengeException is thrown if the authentication challenge is malformed
-     */
-    public void processChallenge(final String challenge) throws MalformedChallengeException
-    {
-        String s = AuthChallengeParser.extractScheme(challenge);
-
-        if (!s.equalsIgnoreCase(getSchemeName()))
-        {
-            throw new MalformedChallengeException("Invalid NTLM challenge: " + challenge);
-        }
-
-        int i = challenge.indexOf(' ');
-
-        if (i != -1)
-        {
-            s = challenge.substring(i, challenge.length());
-            receivedNtlmChallenge = s.trim();
-            authenticationState = AUTHENTICATION_STATE.TYPE2_MSG_RECEIVED;
-        }
-        else
-        {
-            receivedNtlmChallenge = null;
-            authenticationState = authenticationState == AUTHENTICATION_STATE.UNINITIATED ? AUTHENTICATION_STATE.INITIATED : AUTHENTICATION_STATE.FAILED;
-        }
-    }
+    //TODO(pablo.kraan): HTTPCLIENT - fix this
+    ///**
+    // * Processes the NTLM challenge.
+    // *
+    // * @param challenge the challenge string
+    // * @throws MalformedChallengeException is thrown if the authentication challenge is malformed
+    // */
+    //public void processChallenge(final String challenge) throws MalformedChallengeException
+    //{
+    //    String s = AuthChallengeParser.extractScheme(challenge);
+    //
+    //    if (!s.equalsIgnoreCase(getSchemeName()))
+    //    {
+    //        throw new MalformedChallengeException("Invalid NTLM challenge: " + challenge);
+    //    }
+    //
+    //    int i = challenge.indexOf(' ');
+    //
+    //    if (i != -1)
+    //    {
+    //        s = challenge.substring(i, challenge.length());
+    //        receivedNtlmChallenge = s.trim();
+    //        authenticationState = AUTHENTICATION_STATE.TYPE2_MSG_RECEIVED;
+    //    }
+    //    else
+    //    {
+    //        receivedNtlmChallenge = null;
+    //        authenticationState = authenticationState == AUTHENTICATION_STATE.UNINITIATED ? AUTHENTICATION_STATE.INITIATED : AUTHENTICATION_STATE.FAILED;
+    //    }
+    //}
 
     private String ntlmMessageToString(NtlmMessage ntlmMessage)
     {

@@ -19,8 +19,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpMethod;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
 
 /**
  * <code>HttpClientMethodResponseToObject</code> transforms a http client response
@@ -32,7 +32,7 @@ public class HttpClientMethodResponseToObject extends AbstractTransformer
 
     public HttpClientMethodResponseToObject()
     {
-        registerSourceType(DataTypeFactory.create(HttpMethod.class));
+        registerSourceType(DataTypeFactory.create(org.apache.http.HttpResponse.class));
         setReturnDataType(DataTypeFactory.MULE_MESSAGE);
     }
 
@@ -40,18 +40,18 @@ public class HttpClientMethodResponseToObject extends AbstractTransformer
     public Object doTransform(Object src, String encoding) throws TransformerException
     {
         Object msg;
-        HttpMethod httpMethod = (HttpMethod)src;
-        
+        org.apache.http.HttpResponse httpMethod = (HttpResponse) src;
+
         InputStream is;
         try
         {
-            is = httpMethod.getResponseBodyAsStream();
+            is = httpMethod.getEntity().getContent();
         }
         catch (IOException e)
         {
             throw new TransformerException(this, e);
         }
-        
+
         if (is == null)
         {
             msg = NullPayload.getInstance();
@@ -60,10 +60,10 @@ public class HttpClientMethodResponseToObject extends AbstractTransformer
         {
             msg = new ReleasingInputStream(is, httpMethod);
         }
-        
+
         // Standard headers
         Map headerProps = new HashMap();
-        Header[] headers = httpMethod.getResponseHeaders();
+        Header[] headers = httpMethod.getAllHeaders();
         String name;
         for (int i = 0; i < headers.length; i++)
         {
@@ -74,8 +74,8 @@ public class HttpClientMethodResponseToObject extends AbstractTransformer
             }
             headerProps.put(name, headers[i].getValue());
         }
-        // Set Mule Properties
 
+        // Set Mule Properties
         return new DefaultMuleMessage(msg, headerProps, muleContext);
     }
 }

@@ -16,8 +16,9 @@ import org.mule.tck.junit4.rule.DynamicPort;
 
 import java.util.HashMap;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,9 +36,9 @@ public class HttpPropertiesTestCase extends FunctionalTestCase
     @Test
     public void testPropertiesGetMethod() throws Exception
     {
-        GetMethod httpGet = new GetMethod("http://localhost:" + dynamicPort.getNumber() + "/resources/client?id=1");
-        new HttpClient().executeMethod(httpGet);
-        String result =  httpGet.getResponseBodyAsString();
+        HttpGet httpGet = new HttpGet("http://localhost:" + dynamicPort.getNumber() + "/resources/client?id=1");
+        CloseableHttpResponse response = HttpClients.createMinimal().execute(httpGet);
+        String result =  response.getEntity().toString();
         assertEquals("Retrieving client with id = 1", result);
     }
 

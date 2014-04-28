@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat;
 
 import org.mule.tck.junit4.AbstractMuleTestCase;
 
-import org.apache.commons.httpclient.HttpVersion;
+import org.apache.http.HttpVersion;
 import org.junit.Test;
 
 public class RequestLineTestCase extends AbstractMuleTestCase

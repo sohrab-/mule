@@ -32,10 +32,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpVersion;
-import org.apache.commons.httpclient.ProtocolException;
+import org.apache.http.Header;
+import org.apache.http.HttpVersion;
+import org.apache.http.ProtocolException;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.message.BasicHeader;
 
 public class HttpResponseBuilder extends AbstractMessageProcessorOwner
     implements Initialisable, MessageProcessor
@@ -75,7 +76,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
         setCookies(httpResponse, msg);
         setCacheControl(httpResponse, msg);
         String date = new SimpleDateFormat(HttpConstants.DATE_FORMAT, Locale.US).format(new Date());
-        httpResponse.setHeader(new Header(HttpConstants.HEADER_DATE, date));
+        httpResponse.setHeader(new BasicHeader(HttpConstants.HEADER_DATE, date));
         setBody(httpResponse, msg, event);
 
         msg.setPayload(httpResponse);
@@ -123,11 +124,11 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
     {
         if(message.getCorrelationId() != null)
         {
-            response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_CORRELATION_ID_PROPERTY,
+            response.setHeader(new BasicHeader(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_CORRELATION_ID_PROPERTY,
                     message.getCorrelationId()));
-            response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_CORRELATION_GROUP_SIZE_PROPERTY,
+            response.setHeader(new BasicHeader(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_CORRELATION_GROUP_SIZE_PROPERTY,
                     String.valueOf(message.getCorrelationGroupSize())));
-            response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_CORRELATION_SEQUENCE_PROPERTY,
+            response.setHeader(new BasicHeader(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_CORRELATION_SEQUENCE_PROPERTY,
                     String.valueOf(message.getCorrelationSequence())));
         }
     }
@@ -136,7 +137,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
     {
         if(message.getReplyTo() != null)
         {
-            response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_REPLY_TO_PROPERTY,
+            response.setHeader(new BasicHeader(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_REPLY_TO_PROPERTY,
                     message.getReplyTo().toString()));
         }
     }
@@ -161,7 +162,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
                 }
                 else
                 {
-                    response.setHeader(new Header(headerName, headerValue.toString()));
+                    response.setHeader(new BasicHeader(headerName, headerValue.toString()));
                 }
             }
         }
@@ -169,7 +170,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
 
     private void addMuleHeader(HttpResponse response, String headerName, Object headerValue)
     {
-        response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + headerName, headerValue.toString()));
+        response.setHeader(new BasicHeader(HttpConstants.CUSTOM_HEADER_PREFIX + headerName, headerValue.toString()));
     }
 
     private boolean isMuleProperty(String headerName)
@@ -182,7 +183,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
         Cookie[] arrayOfCookies = CookieHelper.asArrayOfCookies(cookies);
         for (Cookie cookie : arrayOfCookies)
         {
-            response.addHeader(new Header(HttpConstants.HEADER_COOKIE_SET,
+            response.addHeader(new BasicHeader(HttpConstants.HEADER_COOKIE_SET,
                 CookieHelper.formatCookieForASetCookieHeader(cookie)));
         }
     }
@@ -226,7 +227,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
                         cacheControlValue += "," + cacheControlHeader.getValue();
                     }
                 }
-                response.setHeader(new Header(HttpConstants.HEADER_CACHE_CONTROL, cacheControlValue));
+                response.setHeader(new BasicHeader(HttpConstants.HEADER_CACHE_CONTROL, cacheControlValue));
             }
         }
     }
@@ -240,7 +241,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
                 try
                 {
                     cookie.parse(message, muleContext.getExpressionManager());
-                    response.addHeader(new Header(HttpConstants.HEADER_COOKIE_SET,
+                    response.addHeader(new BasicHeader(HttpConstants.HEADER_COOKIE_SET,
                                                    CookieHelper.formatCookieForASetCookieHeader(cookie.createCookie())));
 
                 }
@@ -263,11 +264,11 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
                 String value = headers.get(headerName);
                 if(HttpConstants.HEADER_EXPIRES.equals(name))
                 {
-                    response.setHeader(new Header(name, evaluateDate(value, message)));
+                    response.setHeader(new BasicHeader(name, evaluateDate(value, message)));
                 }
                 else
                 {
-                    response.setHeader(new Header(name, parse(value, message)));
+                    response.setHeader(new BasicHeader(name, parse(value, message)));
                 }
             }
         }
@@ -286,14 +287,15 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
     {
         if(status != null)
         {
-            try
-            {
-                response.setStatusLine(HttpVersion.parse(version), Integer.valueOf(parse(status, message)));
-            }
-            catch(ProtocolException e)
-            {
-                throw new DefaultMuleException(e);
-            }
+            //try
+            //{
+                //TODO(pablo.kraan): HTTPCLIENT - parse HTTP version
+                response.setStatusLine(HttpVersion.HTTP_1_1, Integer.valueOf(parse(status, message)));
+            //}
+            //catch(ProtocolException e)
+            //{
+            //    throw new DefaultMuleException(e);
+            //}
         }
     }
 
@@ -304,7 +306,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
             contentType = getDefaultContentType(message);
 
         }
-        response.setHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE, parse(contentType, message)));
+        response.setHeader(new BasicHeader(HttpConstants.HEADER_CONTENT_TYPE, parse(contentType, message)));
     }
 
     private String parse(String value, MuleMessage message)

@@ -211,11 +211,11 @@ public class MuleHttpServletRequest implements HttpServletRequest
 
     public Cookie[] getCookies()
     {
-        org.apache.commons.httpclient.Cookie[] cookies = message.getInboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
+        org.apache.http.cookie.Cookie[] cookies = message.getInboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
         if (cookies == null) return null;
 
         Cookie[] servletCookies = new Cookie[cookies.length];
-        for (org.apache.commons.httpclient.Cookie c : cookies)
+        for (org.apache.http.cookie.Cookie c : cookies)
         {
             Cookie servletCookie = new Cookie(c.getName(), c.getValue());
             

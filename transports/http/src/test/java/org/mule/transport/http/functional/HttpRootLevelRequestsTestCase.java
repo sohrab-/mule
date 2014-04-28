@@ -7,15 +7,16 @@
 package org.mule.transport.http.functional;
 
 import static org.junit.Assert.assertEquals;
-
 import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 
 import java.io.IOException;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -85,9 +86,10 @@ public class HttpRootLevelRequestsTestCase extends FunctionalTestCase
 
     private void assertResponseOk(String url) throws IOException
     {
-        HttpClient client = new HttpClient();
-        GetMethod getMethod = new GetMethod(url);
-        int statusCode = client.executeMethod(getMethod);
-        assertEquals(HttpStatus.SC_OK, statusCode);
+        HttpClient client = HttpClients.createDefault();
+        HttpGet getMethod = new HttpGet(url);
+        HttpResponse execute = client.execute(getMethod);
+
+        assertEquals(HttpStatus.SC_OK, execute.getStatusLine().getStatusCode());
     }
 }

@@ -17,8 +17,8 @@ import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.transport.http.HttpConstants;
 import org.mule.transport.http.PatchMethod;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpStatus;
 import org.junit.ClassRule;
 import org.junit.Test;
 

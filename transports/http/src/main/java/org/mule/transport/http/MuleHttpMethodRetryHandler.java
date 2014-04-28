@@ -9,19 +9,20 @@ package org.mule.transport.http;
 import java.io.IOException;
 import java.net.SocketException;
 
-import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
-import org.apache.commons.httpclient.HttpMethod;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.protocol.HttpContext;
 
-public class MuleHttpMethodRetryHandler extends DefaultHttpMethodRetryHandler
+public class MuleHttpMethodRetryHandler extends DefaultHttpRequestRetryHandler
 {
+
     @Override
-    public boolean retryMethod(final HttpMethod method, final IOException exception, int executionCount)
+    public boolean retryRequest(IOException exception, int executionCount, HttpContext context)
     {
         if ((executionCount < this.getRetryCount()) && (exception instanceof SocketException))
         {
             return true;
         }
-        
-        return super.retryMethod(method, exception, executionCount);
+
+        return super.retryRequest(exception, executionCount, context);
     }
 }

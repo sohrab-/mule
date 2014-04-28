@@ -15,10 +15,10 @@ import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.transport.http.HttpConstants;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.UsernamePasswordCredentials;
+import org.apache.http.client.auth.AuthScope;
+import org.apache.http.client.methods.GetMethod;
 import org.junit.Rule;
 import org.junit.Test;
 

@@ -13,12 +13,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 
-import org.apache.commons.httpclient.ChunkedInputStream;
-import org.apache.commons.httpclient.ContentLengthInputStream;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HeaderElement;
-import org.apache.commons.httpclient.HeaderGroup;
-import org.apache.commons.httpclient.NameValuePair;
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
+import org.apache.http.NameValuePair;
+import org.apache.http.message.HeaderGroup;
 
 /**
  * A http request wrapper
@@ -58,7 +56,8 @@ public class HttpRequest
             {
                 if (transferEncoding.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
                 {
-                    in = new ChunkedInputStream(in);
+                    //TODO(pablo.kraan): HTTPCLIENT - use ChuckedInputStream
+                    //in = new ChunkedInputStream(in);
                 }
             }
             else if (contentLength != null)
@@ -66,7 +65,8 @@ public class HttpRequest
                 long len = getContentLength();
                 if (len >= 0)
                 {
-                    in = new ContentLengthInputStream(in, len);
+                    //TODO(pablo.kraan): HTTPCLIENT - use ChuckedInputStream
+                    //in = new ContentLengthInputStream(in, len);
                 }
             }
             this.entity = in;
@@ -148,7 +148,7 @@ public class HttpRequest
 
     public Iterator<?> getHeaderIterator()
     {
-        return this.headers.getIterator();
+        return this.headers.iterator();
     }
 
     public String getContentType()

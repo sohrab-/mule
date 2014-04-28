@@ -15,9 +15,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpStatus;
+import org.apache.http.client.methods.GetMethod;
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 

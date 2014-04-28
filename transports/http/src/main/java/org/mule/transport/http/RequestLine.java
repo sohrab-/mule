@@ -13,9 +13,9 @@ import java.net.URLEncoder;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpVersion;
-import org.apache.commons.httpclient.ProtocolException;
+import org.apache.http.HttpException;
+import org.apache.http.HttpVersion;
+import org.apache.http.ProtocolException;
 
 /**
  * Defines a HTTP request-line, consisting of method name, URI and protocol.
@@ -75,7 +75,8 @@ public class RequestLine
     public RequestLine(final String method, final String uri, final String httpversion)
             throws ProtocolException
     {
-        this(method, uri, HttpVersion.parse(httpversion));
+        //TODO(pablo.kraan): HTTPCLIENT - parse HTTP version instead of using the hardcoded value
+        this(method, uri, HttpVersion.HTTP_1_1);
     }
 
     /*

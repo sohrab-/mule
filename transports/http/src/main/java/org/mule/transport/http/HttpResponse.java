@@ -19,16 +19,19 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
+import java.util.Locale;
 
-import org.apache.commons.httpclient.ChunkedInputStream;
-import org.apache.commons.httpclient.ContentLengthInputStream;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HeaderElement;
-import org.apache.commons.httpclient.HeaderGroup;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.HttpVersion;
-import org.apache.commons.httpclient.NameValuePair;
-import org.apache.commons.httpclient.StatusLine;
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
+import org.apache.http.HttpStatus;
+import org.apache.http.HttpVersion;
+import org.apache.http.NameValuePair;
+import org.apache.http.StatusLine;
+import org.apache.http.impl.EnglishReasonPhraseCatalog;
+import org.apache.http.impl.io.ChunkedInputStream;
+import org.apache.http.impl.io.ContentLengthInputStream;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.HeaderGroup;
 
 /**
  * A generic HTTP response wrapper.
@@ -40,7 +43,8 @@ public class HttpResponse
 
     private HttpVersion ver = HttpVersion.HTTP_1_1;
     private int statusCode = HttpStatus.SC_OK;
-    private String phrase = HttpStatus.getStatusText(HttpStatus.SC_OK);
+    //TODO(pablo.kraan): find a better way to obtain status phrase
+    private String phrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(HttpStatus.SC_OK, Locale.getDefault());
     private HeaderGroup headers = new HeaderGroup();
     private boolean keepAlive = false;
     private boolean disableKeepAlive = false;
@@ -60,8 +64,9 @@ public class HttpResponse
         {
             throw new IllegalArgumentException("Status line may not be null");
         }
-        setStatusLine(HttpVersion.parse(statusline.getHttpVersion()), statusline.getStatusCode(),
-            statusline.getReasonPhrase());
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //setStatusLine(HttpVersion.parse(statusline.getHttpVersion()), statusline.getStatusCode(),
+        //    statusline.getReasonPhrase());
         setHeaders(headers);
         if (content != null)
         {
@@ -73,7 +78,8 @@ public class HttpResponse
             {
                 if (transferEncoding.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
                 {
-                    in = new ChunkedInputStream(in);
+                    //TODO(pablo.kraan): HTTPCLIENT - is the casting OK?
+                    in = new ChunkedInputStream((org.apache.http.io.SessionInputBuffer) in);
                 }
             }
             else if (contentLength != null)
@@ -81,7 +87,8 @@ public class HttpResponse
                 long len = getContentLength();
                 if (len >= 0)
                 {
-                    in = new ContentLengthInputStream(in, len);
+                    //TODO(pablo.kraan): HTTPCLIENT - is the casting OK?
+                    in = new ContentLengthInputStream((org.apache.http.io.SessionInputBuffer) in, len);
                 }
             }
         }
@@ -105,7 +112,7 @@ public class HttpResponse
         }
         else
         {
-            this.phrase = HttpStatus.getStatusText(statuscode);
+            EnglishReasonPhraseCatalog.INSTANCE.getReason(statuscode, Locale.getDefault());
         }
     }
 
@@ -210,7 +217,7 @@ public class HttpResponse
 
     public Iterator getHeaderIterator()
     {
-        return this.headers.getIterator();
+        return this.headers.iterator();
     }
 
     public String getCharset()
@@ -266,14 +273,6 @@ public class HttpResponse
     {
         if (msg == null) return;
 
-        //TODO MULE-5005 response attachments
-//        if(msg.getOutboundAttachmentNames().size() > 0)
-//        {
-//            setBody(createMultipart());
-//            setHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE, MimeTypes.MULTIPART_MIXED));
-//            return;
-//        }
-        
         Object payload = msg.getPayload();
         if (payload instanceof String)
         {
@@ -316,12 +315,12 @@ public class HttpResponse
     {
         if (!containsHeader(HttpConstants.HEADER_CONTENT_TYPE))
         {
-            setHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE, HttpConstants.DEFAULT_CONTENT_TYPE));
+            setHeader(new BasicHeader(HttpConstants.HEADER_CONTENT_TYPE, HttpConstants.DEFAULT_CONTENT_TYPE));
         }
         if (!containsHeader(HttpConstants.HEADER_TRANSFER_ENCODING))
         {
-            setHeader(new Header(HttpConstants.HEADER_CONTENT_LENGTH, Long.toString(raw.length)));
-        }        
+            setHeader(new BasicHeader(HttpConstants.HEADER_CONTENT_LENGTH, Long.toString(raw.length)));
+        }
         
         this.outputHandler = new OutputHandler() {
 
@@ -385,46 +384,4 @@ public class HttpResponse
     {
         this.fallbackCharset = overrideCharset;
     }
-
-      //TODO MULE-5005 response attachments
-//    protected OutputHandler createMultipart() throws Exception
-//    {
-//
-//        return new OutputHandler() {
-//            public void write(MuleEvent event, OutputStream out) throws IOException
-//            {
-//                MultiPartOutputStream partStream = new MultiPartOutputStream(out, event.getEncoding());
-//                try
-//                {
-//                    MuleMessage msg = event.getMessage();
-//                    if (!(msg.getPayload() instanceof NullPayload))
-//                    {
-//                        String contentType = msg.getOutboundProperty(HttpConstants.HEADER_CONTENT_TYPE, MimeTypes.BINARY);
-//                        partStream.startPart(contentType);
-//                        try
-//                        {
-//                            partStream.getOut().write(msg.getPayloadAsBytes());
-//                        }
-//                        catch (Exception e)
-//                        {
-//                            throw new IOException(e);
-//                        }
-//                    }
-//                    //Write attachments
-//                    for (String name : event.getMessage().getOutboundAttachmentNames())
-//                    {
-//                        DataHandler dh = event.getMessage().getOutboundAttachment(name);
-//                        partStream.startPart(dh.getContentType());
-//                        partStream.getOut().write(IOUtils.toByteArray(dh.getInputStream()));
-//                    }
-//                }
-//                finally
-//                {
-//                    partStream.close();
-//                }
-//            }
-//        };
-//
-//    }
-
 }

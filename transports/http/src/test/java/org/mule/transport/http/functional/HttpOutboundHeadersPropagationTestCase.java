@@ -62,7 +62,7 @@ public class HttpOutboundHeadersPropagationTestCase extends HttpFunctionalTestCa
         {
             // TODO: the Expect header should be sent on the request, it seems the apache commons HttpClient 3.1 has
             // a bug the flag HttpMethodParams.USE_EXPECT_CONTINUE is always false when invoking
-            // org.apache.commons.httpclient.methods.ExpectContinueMethod.addRequestHeaders()
+            // org.apache.http.client.methods.ExpectContinueMethod.addRequestHeaders()
 
             if(!HttpConstants.HEADER_EXPECT.equals(header))         // TODO: This should be sent on the request,
             {

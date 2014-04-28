@@ -7,14 +7,12 @@
 package org.mule.transport.http.transformers;
 
 import org.mule.api.MuleMessage;
-import org.mule.api.config.MuleProperties;
 import org.mule.api.lifecycle.InitialisationException;
 import org.mule.api.transformer.TransformerException;
 import org.mule.config.MuleManifest;
 import org.mule.transformer.AbstractMessageTransformer;
 import org.mule.transformer.types.DataTypeFactory;
 import org.mule.transport.NullPayload;
-import org.mule.transport.http.CookieHelper;
 import org.mule.transport.http.HttpConnector;
 import org.mule.transport.http.HttpConstants;
 import org.mule.transport.http.HttpResponse;
@@ -27,9 +25,6 @@ import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpVersion;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -95,50 +90,51 @@ public class MuleMessageToHttpResponse extends AbstractMessageTransformer
             }
 
             // Ensure there's a content type header
-            if (!response.containsHeader(HttpConstants.HEADER_CONTENT_TYPE))
-            {
-                response.addHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE,
-                        HttpConstants.DEFAULT_CONTENT_TYPE));
-            }
-
-            // Ensure there's a content length or transfer encoding header
-            if (!response.containsHeader(HttpConstants.HEADER_CONTENT_LENGTH)
-                    && !response.containsHeader(HttpConstants.HEADER_TRANSFER_ENCODING))
-            {
-                if (response.hasBody())
-                {
-                    long len = response.getContentLength();
-                    if (len < 0)
-                    {
-                        if (response.getHttpVersion().lessEquals(HttpVersion.HTTP_1_0))
-                        {
-                            // Ensure that we convert the payload to an in memory representation
-                            // so we don't end up with a chunked response
-                            len = msg.getPayloadAsBytes().length;
-
-                            response.setBody(msg);
-
-                            Header header = new Header(HttpConstants.HEADER_CONTENT_LENGTH, Long.toString(len));
-                            response.setHeader(header);
-                        }
-                        else
-                        {
-                            Header header = new Header(HttpConstants.HEADER_TRANSFER_ENCODING, "chunked");
-                            response.addHeader(header);
-                        }
-                    }
-                    else
-                    {
-                        Header header = new Header(HttpConstants.HEADER_CONTENT_LENGTH, Long.toString(len));
-                        response.setHeader(header);
-                    }
-                }
-                else
-                {
-                    Header header = new Header(HttpConstants.HEADER_CONTENT_LENGTH, "0");
-                    response.addHeader(header);
-                }
-            }
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //if (!response.containsHeader(HttpConstants.HEADER_CONTENT_TYPE))
+            //{
+            //    response.addHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE,
+            //            HttpConstants.DEFAULT_CONTENT_TYPE));
+            //}
+            //
+            //// Ensure there's a content length or transfer encoding header
+            //if (!response.containsHeader(HttpConstants.HEADER_CONTENT_LENGTH)
+            //        && !response.containsHeader(HttpConstants.HEADER_TRANSFER_ENCODING))
+            //{
+            //    if (response.hasBody())
+            //    {
+            //        long len = response.getContentLength();
+            //        if (len < 0)
+            //        {
+            //            if (response.getHttpVersion().lessEquals(HttpVersion.HTTP_1_0))
+            //            {
+            //                // Ensure that we convert the payload to an in memory representation
+            //                // so we don't end up with a chunked response
+            //                len = msg.getPayloadAsBytes().length;
+            //
+            //                response.setBody(msg);
+            //
+            //                Header header = new Header(HttpConstants.HEADER_CONTENT_LENGTH, Long.toString(len));
+            //                response.setHeader(header);
+            //            }
+            //            else
+            //            {
+            //                Header header = new Header(HttpConstants.HEADER_TRANSFER_ENCODING, "chunked");
+            //                response.addHeader(header);
+            //            }
+            //        }
+            //        else
+            //        {
+            //            Header header = new Header(HttpConstants.HEADER_CONTENT_LENGTH, Long.toString(len));
+            //            response.setHeader(header);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        Header header = new Header(HttpConstants.HEADER_CONTENT_LENGTH, "0");
+            //        response.addHeader(header);
+            //    }
+            //}
 
             // See if the the client explicitly handles connection persistence
             String connHeader = msg.getOutboundProperty(HttpConstants.HEADER_CONNECTION);
@@ -211,20 +207,21 @@ public class MuleMessageToHttpResponse extends AbstractMessageTransformer
         //    logger.warn("Content-Type was not set, defaulting to: " + contentType);
         //}
 
-        response.setStatusLine(HttpVersion.parse(version), status);
-        if (contentType != null)
-        {
-            response.setHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE, contentType));
-        }
-        String date = formatDate(System.currentTimeMillis());
-        response.setHeader(new Header(HttpConstants.HEADER_DATE, date));
-        response.setHeader(new Header(HttpConstants.HEADER_SERVER, server));
-
-        String etag = msg.getOutboundProperty(HttpConstants.HEADER_ETAG);
-        if (etag != null)
-        {
-            response.setHeader(new Header(HttpConstants.HEADER_ETAG, etag));
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //response.setStatusLine(HttpVersion.parse(version), status);
+        //if (contentType != null)
+        //{
+        //    response.setHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE, contentType));
+        //}
+        //String date = formatDate(System.currentTimeMillis());
+        //response.setHeader(new Header(HttpConstants.HEADER_DATE, date));
+        //response.setHeader(new Header(HttpConstants.HEADER_SERVER, server));
+        //
+        //String etag = msg.getOutboundProperty(HttpConstants.HEADER_ETAG);
+        //if (etag != null)
+        //{
+        //    response.setHeader(new Header(HttpConstants.HEADER_ETAG, etag));
+        //}
         response.setFallbackCharset(encoding);
 
         Collection<String> headerNames = new LinkedList<String>();
@@ -251,19 +248,20 @@ public class MuleMessageToHttpResponse extends AbstractMessageTransformer
                     continue;
                 }
 
-                if (!(cookiesObject instanceof Cookie[]))
-                {
-                    response.addHeader(new Header(headerName, cookiesObject.toString()));
-                }
-                else
-                {
-                    Cookie[] arrayOfCookies = CookieHelper.asArrayOfCookies(cookiesObject);
-                    for (Cookie cookie : arrayOfCookies)
-                    {
-                        response.addHeader(new Header(headerName,
-                            CookieHelper.formatCookieForASetCookieHeader(cookie)));
-                    }
-                }
+                //TODO(pablo.kraan): HTTPCLIENT - fix this
+                //if (!(cookiesObject instanceof Cookie[]))
+                //{
+                //    response.addHeader(new Header(headerName, cookiesObject.toString()));
+                //}
+                //else
+                //{
+                //    Cookie[] arrayOfCookies = CookieHelper.asArrayOfCookies(cookiesObject);
+                //    for (Cookie cookie : arrayOfCookies)
+                //    {
+                //        response.addHeader(new Header(headerName,
+                //            CookieHelper.formatCookieForASetCookieHeader(cookie)));
+                //    }
+                //}
             }
             else
             {
@@ -274,7 +272,8 @@ public class MuleMessageToHttpResponse extends AbstractMessageTransformer
                 }
                 if (value != null)
                 {
-                    response.setHeader(new Header(headerName, value.toString()));
+                    //TODO(pablo.kraan): HTTPCLIENT - fix this
+                    //response.setHeader(new Header(headerName, value.toString()));
                 }
             }
         }
@@ -288,38 +287,40 @@ public class MuleMessageToHttpResponse extends AbstractMessageTransformer
         //attach the outbound properties to the message
         for (String headerName : msg.getOutboundPropertyNames())
         {
-            if (response.getFirstHeader(headerName) != null)
-            {
-                //keep headers already set
-                continue;
-            }
-            Object v = msg.getOutboundProperty(headerName);
-            if (v != null)
-            {
-                if (headerName.startsWith(MuleProperties.PROPERTY_PREFIX))
-                {
-                    headerName = HttpConstants.CUSTOM_HEADER_PREFIX + headerName;
-                }
-                response.setHeader(new Header(headerName, v.toString()));
-            }
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //if (response.getFirstHeader(headerName) != null)
+            //{
+            //    //keep headers already set
+            //    continue;
+            //}
+            //Object v = msg.getOutboundProperty(headerName);
+            //if (v != null)
+            //{
+            //    if (headerName.startsWith(MuleProperties.PROPERTY_PREFIX))
+            //    {
+            //        headerName = HttpConstants.CUSTOM_HEADER_PREFIX + headerName;
+            //    }
+            //    response.setHeader(new Header(headerName, v.toString()));
+            //}
         }
 
-        if (msg.getCorrelationId() != null)
-        {
-            response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_CORRELATION_ID_PROPERTY,
-                    msg.getCorrelationId()));
-            response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX
-                    + MuleProperties.MULE_CORRELATION_GROUP_SIZE_PROPERTY,
-                    String.valueOf(msg.getCorrelationGroupSize())));
-            response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX
-                    + MuleProperties.MULE_CORRELATION_SEQUENCE_PROPERTY,
-                    String.valueOf(msg.getCorrelationSequence())));
-        }
-        if (msg.getReplyTo() != null)
-        {
-            response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_REPLY_TO_PROPERTY,
-                    msg.getReplyTo().toString()));
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //if (msg.getCorrelationId() != null)
+        //{
+        //    response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_CORRELATION_ID_PROPERTY,
+        //            msg.getCorrelationId()));
+        //    response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX
+        //            + MuleProperties.MULE_CORRELATION_GROUP_SIZE_PROPERTY,
+        //            String.valueOf(msg.getCorrelationGroupSize())));
+        //    response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX
+        //            + MuleProperties.MULE_CORRELATION_SEQUENCE_PROPERTY,
+        //            String.valueOf(msg.getCorrelationSequence())));
+        //}
+        //if (msg.getReplyTo() != null)
+        //{
+        //    response.setHeader(new Header(HttpConstants.CUSTOM_HEADER_PREFIX + MuleProperties.MULE_REPLY_TO_PROPERTY,
+        //            msg.getReplyTo().toString()));
+        //}
 
         try
         {

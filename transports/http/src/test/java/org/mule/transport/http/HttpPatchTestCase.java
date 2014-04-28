@@ -7,13 +7,14 @@
 package org.mule.transport.http;
 
 import static org.junit.Assert.assertEquals;
-
 import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.RequestEntity;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
+import java.net.URI;
+
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,14 +35,11 @@ public class HttpPatchTestCase extends FunctionalTestCase
     public void patchBodyShouldBeEchoed() throws Exception
     {
         String url = String.format("http://localhost:%d/httpPatch", port.getNumber());
-        PatchMethod patch = new PatchMethod(url);
+        PatchMethod patch = new PatchMethod(new URI(url));
+        patch.setEntity(new StringEntity(REQUEST, "text/plain", "UTF-8"));
 
-        RequestEntity requestEntity = new StringRequestEntity(REQUEST, "text/plain", "UTF-8");
-        patch.setRequestEntity(requestEntity);
+        CloseableHttpResponse response = HttpClients.createMinimal().execute(patch);
 
-        new HttpClient().executeMethod(patch);
-
-        String response = patch.getResponseBodyAsString();
-        assertEquals(REQUEST, response);
+        assertEquals(REQUEST, response.getEntity().toString());
     }
 }

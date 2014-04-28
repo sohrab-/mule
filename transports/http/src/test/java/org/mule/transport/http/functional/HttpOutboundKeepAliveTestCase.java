@@ -22,7 +22,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.commons.httpclient.Header;
+import org.apache.http.Header;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;

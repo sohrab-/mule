@@ -11,26 +11,26 @@ import org.mule.model.streaming.DelegatingInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.commons.httpclient.HttpMethod;
-
 public class ReleasingInputStream extends DelegatingInputStream
 {
-    private final HttpMethod method;
 
-    public ReleasingInputStream(InputStream is, HttpMethod method)
+    private final org.apache.http.HttpResponse method;
+
+    public ReleasingInputStream(InputStream is, org.apache.http.HttpResponse method)
     {
         super(is);
-        
+
         this.method = method;
     }
 
-    public void close() throws IOException 
+    public void close() throws IOException
     {
         super.close();
-        
+
         if (method != null)
         {
-            method.releaseConnection();
+            //TODO(pablo.kraan): HTTPCLIENT - release connection
+            //method.releaseConnection();
         }
     }
 }

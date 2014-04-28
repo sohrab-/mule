@@ -13,9 +13,9 @@ import org.mule.transport.servlet.jetty.util.EmbeddedJettyServer;
 
 import java.io.IOException;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpStatus;
+import org.apache.http.client.methods.GetMethod;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

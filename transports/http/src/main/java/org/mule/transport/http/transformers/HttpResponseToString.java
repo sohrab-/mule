@@ -6,22 +6,16 @@
  */
 package org.mule.transport.http.transformers;
 
-import org.mule.RequestContext;
 import org.mule.api.transformer.TransformerException;
-import org.mule.api.transport.OutputHandler;
 import org.mule.transformer.AbstractTransformer;
 import org.mule.transformer.types.DataTypeFactory;
-import org.mule.transport.http.HttpConstants;
 import org.mule.transport.http.HttpResponse;
 import org.mule.transport.http.ResponseWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Iterator;
 
-import org.apache.commons.httpclient.ChunkedOutputStream;
-import org.apache.commons.httpclient.Header;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 /**
@@ -50,35 +44,37 @@ public class HttpResponseToString extends AbstractTransformer
             OutputStream outstream = bos;
             ResponseWriter writer = new ResponseWriter(outstream, encoding);
             writer.println(response.getStatusLine());
-            Iterator item = response.getHeaderIterator();
-            while (item.hasNext())
-            {
-                Header header = (Header)item.next();
-                writer.print(header.toExternalForm());
-            }
-            writer.println();
-            writer.flush();
 
-            if (response.hasBody())
-            {
-                OutputHandler handler = response.getBody();
-                Header transferenc = response.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
-                if (transferenc != null)
-                {
-                    response.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
-                    if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
-                    {
-                        outstream = new ChunkedOutputStream(outstream);
-                    }
-                }
-
-                handler.write(RequestContext.getEvent(), outstream);
-
-                if (outstream instanceof ChunkedOutputStream)
-                {
-                    ((ChunkedOutputStream)outstream).finish();
-                }
-            }
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //Iterator item = response.getHeaderIterator();
+            //while (item.hasNext())
+            //{
+            //    Header header = (Header)item.next();
+            //    writer.print(header.toExternalForm());
+            //}
+            //writer.println();
+            //writer.flush();
+            //
+            //if (response.hasBody())
+            //{
+            //    OutputHandler handler = response.getBody();
+            //    Header transferenc = response.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
+            //    if (transferenc != null)
+            //    {
+            //        response.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
+            //        if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
+            //        {
+            //            outstream = new ChunkedOutputStream(outstream);
+            //        }
+            //    }
+            //
+            //    handler.write(RequestContext.getEvent(), outstream);
+            //
+            //    if (outstream instanceof ChunkedOutputStream)
+            //    {
+            //        ((ChunkedOutputStream)outstream).finish();
+            //    }
+            //}
 
             outstream.flush();
             bos.flush();

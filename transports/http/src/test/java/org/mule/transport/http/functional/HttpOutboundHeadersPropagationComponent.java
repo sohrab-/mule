@@ -6,15 +6,13 @@
  */
 package org.mule.transport.http.functional;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.mule.api.MuleEventContext;
 import org.mule.api.MuleMessage;
 import org.mule.api.lifecycle.Callable;
-import org.mule.transport.http.CookieHelper;
 
-import org.apache.commons.httpclient.Cookie;
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

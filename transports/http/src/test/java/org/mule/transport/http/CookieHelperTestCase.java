@@ -6,6 +6,12 @@
  */
 package org.mule.transport.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 
 import java.util.Date;
@@ -13,16 +19,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.cookie.MalformedCookieException;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.cookie.MalformedCookieException;
+import org.apache.http.impl.cookie.BasicClientCookie;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class CookieHelperTestCase extends AbstractMuleTestCase
 {
@@ -59,7 +59,7 @@ public class CookieHelperTestCase extends AbstractMuleTestCase
     @Test
     public void testPutAndMergeCookieObjectMapOfStringString_CookiesInArray_NewCookiesInMap()
     {
-        Cookie[] cookiesObject = new Cookie[]{new Cookie(null, COOKIE_1_NAME, COOKIE_1_ORIGINAL_VALUE)};
+        Cookie[] cookiesObject = new Cookie[]{new BasicClientCookie(COOKIE_1_NAME, COOKIE_1_ORIGINAL_VALUE)};
 
         Map<String, String> newCookiesMap = new HashMap<String, String>();
         newCookiesMap.put(COOKIE_1_NAME, COOKIE_1_NEW_VALUE);
@@ -90,8 +90,8 @@ public class CookieHelperTestCase extends AbstractMuleTestCase
 
         assertEquals(1, cookiesObject.size());
 
-        Cookie[] newCookiesArray = new Cookie[]{new Cookie(null, COOKIE_1_NAME, COOKIE_1_NEW_VALUE),
-            new Cookie(null, COOKIE_2_NAME, COOKIE_2_VALUE)};
+        Cookie[] newCookiesArray = new Cookie[]{new BasicClientCookie(COOKIE_1_NAME, COOKIE_1_NEW_VALUE),
+            new BasicClientCookie(COOKIE_2_NAME, COOKIE_2_VALUE)};
 
         cookiesObject = (Map<String, String>) CookieHelper.putAndMergeCookie(cookiesObject, newCookiesArray);
 
@@ -108,12 +108,12 @@ public class CookieHelperTestCase extends AbstractMuleTestCase
     @Test
     public void testPutAndMergeCookieObjectCookieArray_CookiesInArray_NewCookiesInArray()
     {
-        Cookie[] cookiesObject = new Cookie[]{new Cookie(null, COOKIE_1_NAME, COOKIE_1_ORIGINAL_VALUE)};
+        Cookie[] cookiesObject = new Cookie[]{new BasicClientCookie(COOKIE_1_NAME, COOKIE_1_ORIGINAL_VALUE)};
 
         assertEquals(1, cookiesObject.length);
 
-        Cookie[] newCookiesArray = new Cookie[]{new Cookie(null, COOKIE_1_NAME, COOKIE_1_NEW_VALUE),
-            new Cookie(null, COOKIE_2_NAME, COOKIE_2_VALUE)};
+        Cookie[] newCookiesArray = new Cookie[]{new BasicClientCookie(COOKIE_1_NAME, COOKIE_1_NEW_VALUE),
+            new BasicClientCookie(COOKIE_2_NAME, COOKIE_2_VALUE)};
 
         cookiesObject = (Cookie[]) CookieHelper.putAndMergeCookie(cookiesObject, newCookiesArray);
 
@@ -134,7 +134,7 @@ public class CookieHelperTestCase extends AbstractMuleTestCase
     @Test
     public void testAsArrayOfCookies_CookiesInArray() throws Exception
     {
-        Cookie[] cookiesObject = new Cookie[]{new Cookie()};
+        Cookie[] cookiesObject = new Cookie[]{new BasicClientCookie("noname", null)};
         assertSame(cookiesObject, CookieHelper.asArrayOfCookies(cookiesObject));
 
         Cookie[] emptyArray = CookieHelper.asArrayOfCookies(null);
@@ -159,7 +159,6 @@ public class CookieHelperTestCase extends AbstractMuleTestCase
 
         assertEquals(COOKIE_2_NAME, cookiesAsArray[1].getName());
         assertEquals(COOKIE_2_VALUE, cookiesAsArray[1].getValue());
-
     }
 
     @Test
@@ -170,8 +169,7 @@ public class CookieHelperTestCase extends AbstractMuleTestCase
 
         assertSame(CookieStorageType.ARRAY_OF_COOKIES, CookieStorageType.resolveCookieStorageType(null));
 
-        assertSame(CookieStorageType.ARRAY_OF_COOKIES,
-            CookieStorageType.resolveCookieStorageType(new Cookie[2]));
+        assertSame(CookieStorageType.ARRAY_OF_COOKIES, CookieStorageType.resolveCookieStorageType(new Cookie[2]));
 
         try
         {
@@ -192,7 +190,10 @@ public class CookieHelperTestCase extends AbstractMuleTestCase
         long timestampRoundedToSecond = System.currentTimeMillis() / 1000 * 1000;
         Date expireDate = new Date(timestampRoundedToSecond);
 
-        Cookie cookie = new Cookie(null, COOKIE_1_NAME, COOKIE_1_ORIGINAL_VALUE, null, expireDate, false);
+        BasicClientCookie cookie = new BasicClientCookie(COOKIE_1_NAME, COOKIE_1_ORIGINAL_VALUE);
+        cookie.setExpiryDate(expireDate);
+        cookie.setSecure(false);
+
         String cookieString = CookieHelper.formatCookieForASetCookieHeader(cookie);
         assertTrue(cookieString.contains("Expires="));
 
@@ -211,7 +212,11 @@ public class CookieHelperTestCase extends AbstractMuleTestCase
     @Test
     public void formattingCookieWithoutExpiresHeaderShouldNotHaveExpireDateSet() throws Exception
     {
-        Cookie cookie = new Cookie(null, COOKIE_1_NAME, COOKIE_1_ORIGINAL_VALUE, null, -1, false);
+        BasicClientCookie cookie = new BasicClientCookie(COOKIE_1_NAME, COOKIE_1_ORIGINAL_VALUE);
+        cookie.setPath(null);
+        cookie.setSecure(false);
+        cookie.setExpiryDate(null);
+
         String cookieStr = CookieHelper.formatCookieForASetCookieHeader(cookie);
 
         Cookie[] cookies = CookieHelper.parseCookiesAsAClient(cookieStr, null);

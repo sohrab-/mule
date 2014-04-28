@@ -14,9 +14,9 @@ import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.transport.NullPayload;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpMethod;
+import org.apache.http.client.methods.GetMethod;
 import org.junit.Rule;
 import org.junit.Test;
 

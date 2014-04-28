@@ -16,10 +16,11 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.NameValuePair;
+import org.apache.http.NameValuePair;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.impl.cookie.BasicClientCookie;
 
-public class CookieWrapper extends NameValuePair
+public class CookieWrapper implements NameValuePair
 {
     private String domain;
     private String path;
@@ -27,6 +28,8 @@ public class CookieWrapper extends NameValuePair
     private String maxAge;
     private String secure;
     private String version;
+    private String name;
+    private String value;
 
     public void parse(MuleMessage message, ExpressionManager expressionManager)
     {
@@ -34,7 +37,7 @@ public class CookieWrapper extends NameValuePair
         setValue(parse(getValue(), message, expressionManager));
         this.domain = parse(domain, message, expressionManager);
         this.path = parse(path, message, expressionManager);
-        if(expiryDate != null)
+        if (expiryDate != null)
         {
             this.expiryDate = evaluateDate(expiryDate, message, expressionManager);
         }
@@ -64,9 +67,7 @@ public class CookieWrapper extends NameValuePair
 
     public Cookie createCookie() throws ParseException
     {
-        Cookie cookie = new Cookie();
-        cookie.setName(getName());
-        cookie.setValue(getValue());
+        BasicClientCookie cookie = new BasicClientCookie(getName(), getValue());
         cookie.setDomain(domain);
         cookie.setPath(path);
 
@@ -134,4 +135,23 @@ public class CookieWrapper extends NameValuePair
         this.version = version;
     }
 
+    public String getName()
+    {
+        return name;
+    }
+
+    public String getValue()
+    {
+        return value;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+    public void setValue(String value)
+    {
+        this.value = value;
+    }
 }

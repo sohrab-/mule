@@ -32,10 +32,6 @@ import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
-import org.apache.commons.httpclient.ChunkedOutputStream;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpParser;
-import org.apache.commons.httpclient.StatusLine;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -219,7 +215,9 @@ public class HttpServerConnection implements HandshakeCompletedListener
 
     protected HttpRequest createHttpRequest() throws IOException
     {
-        return new HttpRequest(getRequestLine(), HttpParser.parseHeaders(this.in, encoding), this.in, encoding);
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //return new HttpRequest(getRequestLine(), HttpParser.parseHeaders(this.in, encoding), this.in, encoding);
+        return null;
     }
 
     public HttpResponse readResponse() throws IOException
@@ -227,7 +225,9 @@ public class HttpServerConnection implements HandshakeCompletedListener
         try
         {
             String line = readLine();
-            return new HttpResponse(new StatusLine(line), HttpParser.parseHeaders(this.in, encoding), this.in);
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //return new HttpResponse(new StatusLine(line), HttpParser.parseHeaders(this.in, encoding), this.in);
+            return null;
         }
         catch (IOException e)
         {
@@ -238,21 +238,23 @@ public class HttpServerConnection implements HandshakeCompletedListener
 
     private String readLine() throws IOException
     {
-        String line;
-
-        do
-        {
-            line = HttpParser.readLine(in, encoding);
-        }
-        while (line != null && line.length() == 0);
-
-        if (line == null)
-        {
-            setKeepAlive(false);
-            return null;
-        }
-
-        return line;
+        //String line;
+        //
+        //do
+        //{
+        //    line = HttpParser.readLine(in, encoding);
+        //}
+        //while (line != null && line.length() == 0);
+        //
+        //if (line == null)
+        //{
+        //    setKeepAlive(false);
+        //    return null;
+        //}
+        //
+        //return line;
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        return null;
     }
 
     public void writeRequest(final HttpRequest request) throws IOException
@@ -263,36 +265,38 @@ public class HttpServerConnection implements HandshakeCompletedListener
         }
         ResponseWriter writer = new ResponseWriter(this.out, encoding);
         writer.println(request.getRequestLine().toString());
-        Iterator item = request.getHeaderIterator();
-        while (item.hasNext())
-        {
-            Header header = (Header) item.next();
-            writer.print(header.toExternalForm());
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //Iterator item = request.getHeaderIterator();
+        //while (item.hasNext())
+        //{
+        //    Header header = (Header) item.next();
+        //    writer.print(header.toExternalForm());
+        //}
         writer.println();
         writer.flush();
 
         OutputStream outstream = this.out;
         InputStream content = request.getBody();
-        if (content != null)
-        {
-            Header transferenc = request.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
-            if (transferenc != null)
-            {
-                request.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
-                if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
-                {
-                    outstream = new ChunkedOutputStream(outstream);
-                }
-            }
-
-            IOUtils.copy(content, outstream);
-
-            if (outstream instanceof ChunkedOutputStream)
-            {
-                ((ChunkedOutputStream) outstream).finish();
-            }
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //if (content != null)
+        //{
+        //    Header transferenc = request.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
+        //    if (transferenc != null)
+        //    {
+        //        request.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
+        //        if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
+        //        {
+        //            outstream = new ChunkedOutputStream(outstream);
+        //        }
+        //    }
+        //
+        //    IOUtils.copy(content, outstream);
+        //
+        //    if (outstream instanceof ChunkedOutputStream)
+        //    {
+        //        ((ChunkedOutputStream) outstream).finish();
+        //    }
+        //}
 
         outstream.flush();
     }
@@ -318,8 +322,9 @@ public class HttpServerConnection implements HandshakeCompletedListener
 
         if (!response.isKeepAlive())
         {
-            Header header = new Header(HttpConstants.HEADER_CONNECTION, "close");
-            response.setHeader(header);
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //Header header = new Header(HttpConstants.HEADER_CONNECTION, "close");
+            //response.setHeader(header);
         }
 
         setKeepAlive(response.isKeepAlive());
@@ -327,36 +332,38 @@ public class HttpServerConnection implements HandshakeCompletedListener
         ResponseWriter writer = new ResponseWriter(this.out, encoding);
         OutputStream outstream = this.out;
 
-        writer.println(response.getStatusLine());
-        Iterator item = response.getHeaderIterator();
-        while (item.hasNext())
-        {
-            Header header = (Header) item.next();
-            writer.print(header.toExternalForm());
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //writer.println(response.getStatusLine());
+        //Iterator item = response.getHeaderIterator();
+        //while (item.hasNext())
+        //{
+        //    Header header = (Header) item.next();
+        //    writer.print(header.toExternalForm());
+        //}
         writer.println();
         writer.flush();
 
         OutputHandler content = response.getBody();
-        if (content != null)
-        {
-            Header transferenc = response.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
-            if (transferenc != null)
-            {
-                response.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
-                if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
-                {
-                    outstream = new ChunkedOutputStream(outstream);
-                }
-            }
-
-            content.write(RequestContext.getEvent(), outstream);
-
-            if (outstream instanceof ChunkedOutputStream)
-            {
-                ((ChunkedOutputStream) outstream).finish();
-            }
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //if (content != null)
+        //{
+        //    Header transferenc = response.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
+        //    if (transferenc != null)
+        //    {
+        //        response.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
+        //        if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
+        //        {
+        //            outstream = new ChunkedOutputStream(outstream);
+        //        }
+        //    }
+        //
+        //    content.write(RequestContext.getEvent(), outstream);
+        //
+        //    if (outstream instanceof ChunkedOutputStream)
+        //    {
+        //        ((ChunkedOutputStream) outstream).finish();
+        //    }
+        //}
 
         outstream.flush();
     }
@@ -406,7 +413,8 @@ public class HttpServerConnection implements HandshakeCompletedListener
     public void writeFailureResponse(int statusCode, String description, Map<String, String> headers) throws IOException
     {
         HttpResponse response = new HttpResponse();
-        response.setStatusLine(readRequest().getRequestLine().getHttpVersion(), statusCode);
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //response.setStatusLine(readRequest().getRequestLine().getHttpVersion(), statusCode);
         response.setBody(description);
         addHeadersToHttpResponse(response, headers);
         writeResponse(response);
@@ -416,7 +424,8 @@ public class HttpServerConnection implements HandshakeCompletedListener
     {
         for (String headerName : headers.keySet())
         {
-            response.addHeader(new Header(headerName, headers.get(headerName)));
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //response.addHeader(new Header(headerName, headers.get(headerName)));
         }
     }
 
@@ -557,7 +566,8 @@ public class HttpServerConnection implements HandshakeCompletedListener
             String line = readLine();
             if (line != null)
             {
-                this.requestLine = RequestLine.parseLine(line);
+                //TODO(pablo.kraan): HTTPCLIENT - fix this
+                //this.requestLine = RequestLine.parseLine(line);
             }
         }
         return this.requestLine;

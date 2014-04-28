@@ -14,7 +14,7 @@ import org.mule.transport.http.HttpResponse;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.httpclient.Header;
+import org.apache.http.client.Header;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;

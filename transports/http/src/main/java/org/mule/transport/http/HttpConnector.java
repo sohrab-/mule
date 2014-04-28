@@ -9,7 +9,6 @@ package org.mule.transport.http;
 import org.mule.api.MuleContext;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
-import org.mule.api.MuleMessage;
 import org.mule.api.construct.FlowConstruct;
 import org.mule.api.endpoint.EndpointURI;
 import org.mule.api.endpoint.ImmutableEndpoint;
@@ -19,9 +18,7 @@ import org.mule.api.processor.MessageProcessor;
 import org.mule.api.transport.MessageReceiver;
 import org.mule.api.transport.NoReceiverForEndpointException;
 import org.mule.config.i18n.CoreMessages;
-import org.mule.transport.ConnectException;
 import org.mule.transport.http.i18n.HttpMessages;
-import org.mule.transport.http.ntlm.NTLMScheme;
 import org.mule.transport.tcp.TcpConnector;
 import org.mule.util.MapUtils;
 
@@ -37,19 +34,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.Credentials;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpConnectionManager;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpState;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.NTCredentials;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthPolicy;
-import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
-import org.apache.commons.httpclient.util.IdleConnectionTimeoutThread;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 /**
  * <code>HttpConnector</code> provides a way of receiving and sending http requests
@@ -132,10 +118,11 @@ public class HttpConnector extends TcpConnector
     public static final String HTTP_SERVLET_REQUEST_PROPERTY = HTTP_PREFIX + "servlet.request";
     public static final String HTTP_SERVLET_RESPONSE_PROPERTY = HTTP_PREFIX + "servlet.response";
 
-    /**
-     * Allows the user to set a {@link org.apache.commons.httpclient.params.HttpMethodParams} object in the client
-     * request to be set on the HttpMethod request object
-     */
+    //TODO(pablo.kraan): HTTPCLIENT - fix this
+    ///**
+    // * Allows the user to set a {@link org.apache.http.client.params.HttpMethodParams} object in the client
+    // * request to be set on the HttpMethod request object
+    // */
     public static final String HTTP_PARAMS_PROPERTY = HTTP_PREFIX + "params";
     public static final String HTTP_GET_BODY_PARAM_PROPERTY = HTTP_PREFIX + "get.body.param";
     public static final String DEFAULT_HTTP_GET_BODY_PARAM_PROPERTY = "body";
@@ -161,7 +148,8 @@ public class HttpConnector extends TcpConnector
         props.add(HTTP_ENCODE_PARAMVALUE);
         HTTP_INBOUND_PROPERTIES = props;
 
-        AuthPolicy.registerAuthScheme(AuthPolicy.NTLM, NTLMScheme.class);
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //AuthPolicy.registerAuthScheme(AuthPolicy.NTLM, NTLMScheme.class);
     }
 
     public static final String HTTP_COOKIE_SPEC_PROPERTY = "cookieSpec";
@@ -189,7 +177,8 @@ public class HttpConnector extends TcpConnector
 
     protected HttpConnectionManager clientConnectionManager;
 
-    private IdleConnectionTimeoutThread connectionCleaner;
+    //TODO(pablo.kraan): HTTPCLIENT - fix this
+    //private IdleConnectionTimeoutThread connectionCleaner;
 
     private boolean disableCleanupThread;
 
@@ -204,52 +193,53 @@ public class HttpConnector extends TcpConnector
     protected void doInitialise() throws InitialisationException
     {
         super.doInitialise();
-        if (clientConnectionManager == null)
-        {
-            clientConnectionManager = new MultiThreadedHttpConnectionManager();
-            String prop = System.getProperty("mule.http.disableCleanupThread");
-            disableCleanupThread = prop != null && prop.equals("true");
-            if (!disableCleanupThread)
-            {
-                connectionCleaner = new IdleConnectionTimeoutThread();
-                connectionCleaner.setName("HttpClient-connection-cleaner-" + getName());
-                connectionCleaner.addConnectionManager(clientConnectionManager);
-                connectionCleaner.start();
-            }
-
-            HttpConnectionManagerParams params = new HttpConnectionManagerParams();
-            if (getSendBufferSize() != INT_VALUE_NOT_SET)
-            {
-                params.setSendBufferSize(getSendBufferSize());
-            }
-            if (getReceiveBufferSize() != INT_VALUE_NOT_SET)
-            {
-                params.setReceiveBufferSize(getReceiveBufferSize());
-            }
-            if (getClientSoTimeout() != INT_VALUE_NOT_SET)
-            {
-                params.setSoTimeout(getClientSoTimeout());
-            }
-            if (getSocketSoLinger() != INT_VALUE_NOT_SET)
-            {
-                params.setLinger(getSocketSoLinger());
-            }
-
-            params.setTcpNoDelay(isSendTcpNoDelay());
-            params.setMaxTotalConnections(dispatchers.getMaxTotal());
-            params.setDefaultMaxConnectionsPerHost(dispatchers.getMaxTotal());
-
-            if (getConnectionTimeout() != INT_VALUE_NOT_SET)
-            {
-                params.setConnectionTimeout(getConnectionTimeout());
-            }
-            else
-            {
-                params.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-            }
-
-            clientConnectionManager.setParams(params);
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //if (clientConnectionManager == null)
+        //{
+        //    clientConnectionManager = new MultiThreadedHttpConnectionManager();
+        //    String prop = System.getProperty("mule.http.disableCleanupThread");
+        //    disableCleanupThread = prop != null && prop.equals("true");
+        //    if (!disableCleanupThread)
+        //    {
+        //        connectionCleaner = new IdleConnectionTimeoutThread();
+        //        connectionCleaner.setName("HttpClient-connection-cleaner-" + getName());
+        //        connectionCleaner.addConnectionManager(clientConnectionManager);
+        //        connectionCleaner.start();
+        //    }
+        //
+        //    HttpConnectionManagerParams params = new HttpConnectionManagerParams();
+        //    if (getSendBufferSize() != INT_VALUE_NOT_SET)
+        //    {
+        //        params.setSendBufferSize(getSendBufferSize());
+        //    }
+        //    if (getReceiveBufferSize() != INT_VALUE_NOT_SET)
+        //    {
+        //        params.setReceiveBufferSize(getReceiveBufferSize());
+        //    }
+        //    if (getClientSoTimeout() != INT_VALUE_NOT_SET)
+        //    {
+        //        params.setSoTimeout(getClientSoTimeout());
+        //    }
+        //    if (getSocketSoLinger() != INT_VALUE_NOT_SET)
+        //    {
+        //        params.setLinger(getSocketSoLinger());
+        //    }
+        //
+        //    params.setTcpNoDelay(isSendTcpNoDelay());
+        //    params.setMaxTotalConnections(dispatchers.getMaxTotal());
+        //    params.setDefaultMaxConnectionsPerHost(dispatchers.getMaxTotal());
+        //
+        //    if (getConnectionTimeout() != INT_VALUE_NOT_SET)
+        //    {
+        //        params.setConnectionTimeout(getConnectionTimeout());
+        //    }
+        //    else
+        //    {
+        //        params.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+        //    }
+        //
+        //    clientConnectionManager.setParams(params);
+        //}
         //connection manager must be created during initialization due that devkit requires the connection manager before start phase.
         //That's why it not manager only during stop/start phases and must be created also here.
         if (connectionManager == null)
@@ -268,15 +258,16 @@ public class HttpConnector extends TcpConnector
     @Override
     protected void doDispose()
     {
-        if (!disableCleanupThread)
-        {
-            connectionCleaner.shutdown();
-
-            if (!muleContext.getConfiguration().isStandalone())
-            {
-                MultiThreadedHttpConnectionManager.shutdownAll();
-            }
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //if (!disableCleanupThread)
+        //{
+        //    connectionCleaner.shutdown();
+        //
+        //    if (!muleContext.getConfiguration().isStandalone())
+        //    {
+        //        MultiThreadedHttpConnectionManager.shutdownAll();
+        //    }
+        //}
         if (this.connectionManager != null)
         {
             connectionManager.dispose();
@@ -444,73 +435,76 @@ public class HttpConnector extends TcpConnector
 
     protected HttpClient doClientConnect() throws Exception
     {
-        HttpState state = new HttpState();
-
-        if (getProxyUsername() != null)
-        {
-            Credentials credentials;
-            if (isProxyNtlmAuthentication())
-            {
-                credentials = new NTCredentials(getProxyUsername(), getProxyPassword(), getProxyHostname(), "");
-            }
-            else
-            {
-                credentials = new UsernamePasswordCredentials(getProxyUsername(), getProxyPassword());
-            }
-
-            AuthScope authscope = new AuthScope(getProxyHostname(), getProxyPort());
-
-            state.setProxyCredentials(authscope, credentials);
-        }
-
-        HttpClient client = new HttpClient();
-        client.setState(state);
-        client.setHttpConnectionManager(getClientConnectionManager());
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //HttpState state = new HttpState();
+        //
+        //if (getProxyUsername() != null)
+        //{
+        //    Credentials credentials;
+        //    if (isProxyNtlmAuthentication())
+        //    {
+        //        credentials = new NTCredentials(getProxyUsername(), getProxyPassword(), getProxyHostname(), "");
+        //    }
+        //    else
+        //    {
+        //        credentials = new UsernamePasswordCredentials(getProxyUsername(), getProxyPassword());
+        //    }
+        //
+        //    AuthScope authscope = new AuthScope(getProxyHostname(), getProxyPort());
+        //
+        //    state.setProxyCredentials(authscope, credentials);
+        //}
+        //
+        //TODO(pablo.kraan): HTTPCLIENT - improve client creation
+        HttpClient client = HttpClients.createDefault();
+        //client.setState(state);
+        //client.setHttpConnectionManager(getClientConnectionManager());
 
         return client;
     }
 
-    protected void setupClientAuthorization(MuleEvent event, HttpMethod httpMethod,
+    protected void setupClientAuthorization(MuleEvent event, org.apache.http.HttpRequest httpMethod,
                                             HttpClient client, ImmutableEndpoint endpoint)
             throws UnsupportedEncodingException
     {
-        httpMethod.setDoAuthentication(true);
-        client.getParams().setAuthenticationPreemptive(true);
-
-        if (event != null && event.getCredentials() != null)
-        {
-            MuleMessage msg = event.getMessage();
-            String authScopeHost = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.host", event.getMessageSourceURI().getHost());
-            int authScopePort = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.port", event.getMessageSourceURI().getPort());
-            String authScopeRealm = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.realm", AuthScope.ANY_REALM);
-            String authScopeScheme = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.scheme", AuthScope.ANY_SCHEME);
-            client.getState().setCredentials(
-                    new AuthScope(authScopeHost, authScopePort, authScopeRealm, authScopeScheme),
-                    new UsernamePasswordCredentials(event.getCredentials().getUsername(), new String(
-                            event.getCredentials().getPassword())));
-        }
-        else if (endpoint.getEndpointURI().getUserInfo() != null
-                 && endpoint.getProperty(HttpConstants.HEADER_AUTHORIZATION) == null)
-        {
-            // Add User Creds
-            StringBuilder header = new StringBuilder(128);
-            header.append("Basic ");
-            header.append(new String(Base64.encodeBase64(endpoint.getEndpointURI().getUserInfo().getBytes(
-                    endpoint.getEncoding()))));
-            httpMethod.addRequestHeader(HttpConstants.HEADER_AUTHORIZATION, header.toString());
-        }
-        //TODO MULE-4501 this sohuld be removed and handled only in the ObjectToHttpRequest transformer
-        else if (event != null && event.getMessage().getOutboundProperty(HttpConstants.HEADER_AUTHORIZATION) != null &&
-                 httpMethod.getRequestHeader(HttpConstants.HEADER_AUTHORIZATION) == null)
-        {
-            String auth = event.getMessage().getOutboundProperty(HttpConstants.HEADER_AUTHORIZATION);
-            httpMethod.addRequestHeader(HttpConstants.HEADER_AUTHORIZATION, auth);
-        }
-        else
-        {
-            // don't use preemptive if there are no credentials to send
-            client.getParams().setAuthenticationPreemptive(false);
-        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //httpMethod.setDoAuthentication(true);
+    //    client.getParams().setAuthenticationPreemptive(true);
+    //
+    //    if (event != null && event.getCredentials() != null)
+    //    {
+    //        MuleMessage msg = event.getMessage();
+    //        String authScopeHost = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.host", event.getMessageSourceURI().getHost());
+    //        int authScopePort = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.port", event.getMessageSourceURI().getPort());
+    //        String authScopeRealm = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.realm", AuthScope.ANY_REALM);
+    //        String authScopeScheme = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.scheme", AuthScope.ANY_SCHEME);
+    //        client.getState().setCredentials(
+    //                new AuthScope(authScopeHost, authScopePort, authScopeRealm, authScopeScheme),
+    //                new UsernamePasswordCredentials(event.getCredentials().getUsername(), new String(
+    //                        event.getCredentials().getPassword())));
+    //    }
+    //    else if (endpoint.getEndpointURI().getUserInfo() != null
+    //             && endpoint.getProperty(HttpConstants.HEADER_AUTHORIZATION) == null)
+    //    {
+    //        // Add User Creds
+    //        StringBuilder header = new StringBuilder(128);
+    //        header.append("Basic ");
+    //        header.append(new String(Base64.encodeBase64(endpoint.getEndpointURI().getUserInfo().getBytes(
+    //                endpoint.getEncoding()))));
+    //        httpMethod.addRequestHeader(HttpConstants.HEADER_AUTHORIZATION, header.toString());
+    //    }
+    //    //TODO MULE-4501 this sohuld be removed and handled only in the ObjectToHttpRequest transformer
+    //    else if (event != null && event.getMessage().getOutboundProperty(HttpConstants.HEADER_AUTHORIZATION) != null &&
+    //             httpMethod.getRequestHeader(HttpConstants.HEADER_AUTHORIZATION) == null)
+    //    {
+    //        String auth = event.getMessage().getOutboundProperty(HttpConstants.HEADER_AUTHORIZATION);
+    //        httpMethod.addRequestHeader(HttpConstants.HEADER_AUTHORIZATION, auth);
+    //    }
+    //    else
+    //    {
+    //        // don't use preemptive if there are no credentials to send
+    //        client.getParams().setAuthenticationPreemptive(false);
+    //    }
     }
 
     /**

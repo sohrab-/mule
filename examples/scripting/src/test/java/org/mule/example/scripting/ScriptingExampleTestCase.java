@@ -11,8 +11,8 @@ import static org.junit.Assert.assertEquals;
 import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.GetMethod;
 import org.junit.Rule;
 import org.junit.Test;
 

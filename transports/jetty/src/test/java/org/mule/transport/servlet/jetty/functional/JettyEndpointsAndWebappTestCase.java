@@ -15,9 +15,9 @@ import org.mule.transport.servlet.jetty.AbstractWebappsTestCase;
 
 import java.io.IOException;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpStatus;
+import org.apache.http.client.methods.GetMethod;
 import org.junit.Rule;
 import org.junit.Test;
 

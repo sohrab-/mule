@@ -118,35 +118,37 @@ public class MuleHttpServletResponse implements HttpServletResponse
 
     public void addCookie(Cookie cookie)
     {
-        org.apache.commons.httpclient.Cookie internal = toHttpClientCookie(cookie);
-        
-        org.apache.commons.httpclient.Cookie[] internalCookies = message.getOutboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
+        org.apache.http.cookie.Cookie internal = toHttpClientCookie(cookie);
+
+        org.apache.http.cookie.Cookie[] internalCookies = message.getOutboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
         if (internalCookies == null)
         {
-            internalCookies = new org.apache.commons.httpclient.Cookie[] { internal };
+            internalCookies = new org.apache.http.cookie.Cookie[] { internal };
         }
         else
         {
-            List<org.apache.commons.httpclient.Cookie> list = new ArrayList<org.apache.commons.httpclient.Cookie>(Arrays.asList(internalCookies));
+            List<org.apache.http.cookie.Cookie> list = new ArrayList<org.apache.http.cookie.Cookie>(Arrays.asList(internalCookies));
             list.add(internal);
-            internalCookies = list.toArray(new org.apache.commons.httpclient.Cookie[list.size()]);
+            internalCookies = list.toArray(new org.apache.http.cookie.Cookie[list.size()]);
         }
         message.setOutboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY, internalCookies);
     }
 
-    private org.apache.commons.httpclient.Cookie toHttpClientCookie(Cookie cookie)
+    private org.apache.http.cookie.Cookie toHttpClientCookie(Cookie cookie)
     {
-        org.apache.commons.httpclient.Cookie internal = new org.apache.commons.httpclient.Cookie();
-        
-        internal.setName(cookie.getName());
-        internal.setValue(cookie.getValue());
-        internal.setComment(cookie.getComment());
-        internal.setDomain(cookie.getDomain());
-//        internal.setExpiryDate(toExpiry(cookie.getMaxAge()));
-        internal.setPath(cookie.getPath());
-        internal.setVersion(cookie.getVersion());
-        
-        return internal;
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+//        org.apache.http.cookie.Cookie internal = new org.apache.http.cookie.Cookie();
+//
+//        internal.setName(cookie.getName());
+//        internal.setValue(cookie.getValue());
+//        internal.setComment(cookie.getComment());
+//        internal.setDomain(cookie.getDomain());
+////        internal.setExpiryDate(toExpiry(cookie.getMaxAge()));
+//        internal.setPath(cookie.getPath());
+//        internal.setVersion(cookie.getVersion());
+
+
+        return null;
     }
 
     public boolean containsHeader(String name)

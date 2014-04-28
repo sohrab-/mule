@@ -8,7 +8,6 @@
 package org.mule.transport.http.functional;
 
 import org.mule.transport.http.HttpRequest;
-import org.mule.transport.http.RequestLine;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,8 +15,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.httpclient.HttpParser;
 
 public abstract class MockHttpServer extends Object implements Runnable
 {
@@ -69,10 +66,12 @@ public abstract class MockHttpServer extends Object implements Runnable
     {
         try
         {
-            String line = HttpParser.readLine(in, encoding);
-            RequestLine requestLine = RequestLine.parseLine(line);
-
-            return new HttpRequest(requestLine, HttpParser.parseHeaders(in, encoding), in, encoding);
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //String line = HttpParser.readLine(in, encoding);
+            //RequestLine requestLine = RequestLine.parseLine(line);
+            //
+            //return new HttpRequest(requestLine, HttpParser.parseHeaders(in, encoding), in, encoding);
+            return null;
 
         }
         catch (Exception e)

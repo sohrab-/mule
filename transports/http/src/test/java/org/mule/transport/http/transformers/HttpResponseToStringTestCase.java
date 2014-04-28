@@ -6,6 +6,8 @@
  */
 package org.mule.transport.http.transformers;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import org.mule.DefaultMuleMessage;
 import org.mule.api.transformer.TransformerException;
 import org.mule.tck.junit4.AbstractMuleContextTestCase;
@@ -14,12 +16,9 @@ import org.mule.transport.http.HttpConstants;
 import org.mule.transport.http.HttpResponse;
 import org.mule.transport.http.ResponseWriter;
 
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpVersion;
+import org.apache.http.HttpVersion;
+import org.apache.http.message.BasicHeader;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class HttpResponseToStringTestCase extends AbstractMuleContextTestCase
 {
@@ -45,7 +44,7 @@ public class HttpResponseToStringTestCase extends AbstractMuleContextTestCase
 
         _resp = new HttpResponse();
         _resp.setStatusLine(new HttpVersion(1, 1), 200);
-        _resp.setHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE, HttpConstants.DEFAULT_CONTENT_TYPE));
+        _resp.setHeader(new BasicHeader(HttpConstants.HEADER_CONTENT_TYPE, HttpConstants.DEFAULT_CONTENT_TYPE));
         _resp.setBody(new DefaultMuleMessage(_body, muleContext));
     }
 
@@ -61,8 +60,7 @@ public class HttpResponseToStringTestCase extends AbstractMuleContextTestCase
         HttpResponseToString trasf = new HttpResponseToString();
         trasf.setReturnDataType(DataTypeFactory.STRING);
 
-        _resp.setHeader(new Header(HttpConstants.HEADER_TRANSFER_ENCODING,
-            HttpConstants.TRANSFER_ENCODING_CHUNKED));
+        _resp.setHeader(new BasicHeader(HttpConstants.HEADER_TRANSFER_ENCODING, HttpConstants.TRANSFER_ENCODING_CHUNKED));
         _resultChunked += "31\r\n" + _body + "\r\n0\r\n\r\n";
 
         String trasfRes = (String)trasf.doTransform(_resp, "ISO-8859-1");

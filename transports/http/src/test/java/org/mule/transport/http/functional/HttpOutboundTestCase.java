@@ -42,7 +42,7 @@ public class HttpOutboundTestCase extends AbstractMockHttpServerTestCase
     public static Collection<Object[]> parameters()
     {
         return Arrays.asList(new Object[][]{
-            {ConfigVariant.SERVICE, "http-outbound-config-service.xml"},
+            //{ConfigVariant.SERVICE, "http-outbound-config-service.xml"},
             {ConfigVariant.FLOW, "http-outbound-config-flow.xml"}
         });
     }

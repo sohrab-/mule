@@ -27,6 +27,7 @@ public class HttpMultipartMuleMessageFactory extends HttpMuleMessageFactory
     {
         Object body = null;
 
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
         if (httpRequest.getContentType().contains("multipart/form-data"))
         {
             MultiPartInputStream in = new MultiPartInputStream(httpRequest.getBody(), httpRequest.getContentType(), null);
