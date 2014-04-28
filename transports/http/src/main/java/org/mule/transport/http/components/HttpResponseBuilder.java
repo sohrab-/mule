@@ -34,9 +34,11 @@ import java.util.TimeZone;
 
 import org.apache.http.Header;
 import org.apache.http.HttpVersion;
-import org.apache.http.ProtocolException;
+import org.apache.http.ParseException;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicLineParser;
+import org.apache.http.message.LineParser;
 
 public class HttpResponseBuilder extends AbstractMessageProcessorOwner
     implements Initialisable, MessageProcessor
@@ -50,6 +52,7 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
     private boolean propagateMuleProperties = false;
     private AbstractTransformer bodyTransformer;
     private SimpleDateFormat dateFormatter;
+    private LineParser lineParser = new BasicLineParser();
 
     private List<MessageProcessor> ownedMessageProcessor = new ArrayList<MessageProcessor>();
 
@@ -287,15 +290,14 @@ public class HttpResponseBuilder extends AbstractMessageProcessorOwner
     {
         if(status != null)
         {
-            //try
-            //{
-                //TODO(pablo.kraan): HTTPCLIENT - parse HTTP version
-                response.setStatusLine(HttpVersion.HTTP_1_1, Integer.valueOf(parse(status, message)));
-            //}
-            //catch(ProtocolException e)
-            //{
-            //    throw new DefaultMuleException(e);
-            //}
+            try
+            {
+                response.setStatusLine((HttpVersion) BasicLineParser.parseProtocolVersion(version, null), Integer.valueOf(parse(status, message)));
+            }
+            catch(ParseException e)
+            {
+                throw new DefaultMuleException(e);
+            }
         }
     }
 
