@@ -12,10 +12,13 @@ import org.mule.api.MuleException;
 import org.mule.api.MuleMessage;
 import org.mule.api.config.MuleProperties;
 import org.mule.api.endpoint.OutboundEndpoint;
+import org.mule.api.lifecycle.CreateException;
 import org.mule.api.lifecycle.InitialisationException;
 import org.mule.api.transformer.Transformer;
 import org.mule.api.transformer.TransformerException;
 import org.mule.api.transport.DispatchException;
+import org.mule.config.i18n.Message;
+import org.mule.config.i18n.MessageFactory;
 import org.mule.message.DefaultExceptionPayload;
 import org.mule.transformer.TransformerChain;
 import org.mule.transport.AbstractMessageDispatcher;
@@ -72,6 +75,23 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
     {
         super.doInitialise();
         sendTransformer.initialise();
+    }
+    
+    @Override
+    protected void initializeMessageFactory() throws InitialisationException
+    {
+        HttpMuleMessageFactory messageFactory;
+        try
+        {
+            messageFactory = (HttpMuleMessageFactory) super.createMuleMessageFactory();
+            messageFactory.setUri(endpoint.getAddress());
+            this.muleMessageFactory = messageFactory;
+        }
+        catch (CreateException ce)
+        {
+            Message message = MessageFactory.createStaticMessage(ce.getMessage());
+            throw new InitialisationException(message, ce, this);
+        }
     }
 
     @Override

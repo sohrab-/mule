@@ -48,6 +48,8 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
     private boolean enableCookies = false;
     private String cookieSpec;
     private MessageExchangePattern exchangePattern = MessageExchangePattern.REQUEST_RESPONSE;
+    private String httpMethod;
+    private String uri;
 
     public HttpMuleMessageFactory()
     {
@@ -127,10 +129,7 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
     @Override
     protected void addProperties(DefaultMuleMessage message, Object transportMessage) throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - method is being added as a property, but seems like there is no method on the HttpResponse
-        String method = null;
         ProtocolVersion httpVersion;
-        String uri;
         String statusCode = null;
         Map<String, Object> headers;
         Map<String, Object> httpHeaders = new HashMap<String, Object>();
@@ -139,7 +138,7 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
         if (transportMessage instanceof HttpRequest)
         {
             HttpRequest httpRequest = (HttpRequest) transportMessage;
-            method = httpRequest.getRequestLine().getMethod();
+            httpMethod = httpRequest.getRequestLine().getMethod();
             httpVersion = httpRequest.getRequestLine().getHttpVersion();
             uri = httpRequest.getRequestLine().getUri();
             headers = convertHeadersToMap(httpRequest.getHeaders(), uri);
@@ -147,14 +146,10 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
         }
         else if (transportMessage instanceof org.apache.http.HttpResponse)
         {
-            org.apache.http.HttpResponse httpMethod = (org.apache.http.HttpResponse) transportMessage;
-            //TODO(pablo.kraan): HTTPCLIENT - are these values needed?
-            //method = httpMethod.getName();
-            //uri = httpMethod.getURI().toString();
-            httpVersion = httpMethod.getStatusLine().getProtocolVersion();
-            uri = null;
-            statusCode = String.valueOf(httpMethod.getStatusLine().getStatusCode());
-            headers = convertHeadersToMap(httpMethod.getAllHeaders(), uri);
+            org.apache.http.HttpResponse httpResponse = (org.apache.http.HttpResponse) transportMessage;
+            httpVersion = httpResponse.getStatusLine().getProtocolVersion();
+            statusCode = String.valueOf(httpResponse.getStatusLine().getStatusCode());
+            headers = convertHeadersToMap(httpResponse.getAllHeaders(), uri);
         }
         else
         {
@@ -170,7 +165,6 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
 
         String encoding = getEncoding(headers);
 
-        //TODO(pablo.kraan): HTTPCLIENT - is this needed when payload is a HttpResponse
         if (uri != null)
         {
             queryParameters.put(HttpConnector.HTTP_QUERY_PARAMS, processQueryParams(uri, encoding));
@@ -179,7 +173,7 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
             addUriParamsAsHeaders(headers, uri);
         }
 
-        headers.put(HttpConnector.HTTP_METHOD_PROPERTY, method);
+        headers.put(HttpConnector.HTTP_METHOD_PROPERTY, httpMethod);
         headers.put(HttpConnector.HTTP_REQUEST_PROPERTY, uri);
         headers.put(HttpConnector.HTTP_VERSION_PROPERTY, httpVersion.toString());
         if (enableCookies)
@@ -445,5 +439,15 @@ public class HttpMuleMessageFactory extends AbstractMuleMessageFactory
     public void setExchangePattern(MessageExchangePattern mep)
     {
         exchangePattern = mep;
+    }
+
+    public void setHttpMethod(String httpMethod)
+    {
+        this.httpMethod = httpMethod;
+    }
+
+    public void setUri(String uri)
+    {
+        this.uri = uri;
     }
 }

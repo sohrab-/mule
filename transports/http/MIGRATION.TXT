@@ -1,0 +1,1 @@
+- The inbound property http.method is no longer available on response messages of outbound http endpoints. 
