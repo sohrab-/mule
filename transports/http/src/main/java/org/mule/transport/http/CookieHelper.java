@@ -290,29 +290,28 @@ public class CookieHelper
             headerValue.length());
 
         Cookies cs = new Cookies(mimeHeaders);
-        Cookie[] cookies = new Cookie[cs.getCookieCount()];
+        BasicClientCookie[] cookies = new BasicClientCookie[cs.getCookieCount()];
         for (int i = 0; i < cs.getCookieCount(); i++)
         {
             ServerCookie serverCookie = cs.getCookie(i);
             cookies[i] = transformServerCookieToClientCookie(serverCookie);
             if (uri != null)
             {
-                //TODO(pablo.kraan): HTTPCLIENT - parse cookie
-                //    cookies[i].setSecure(uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("https"));
-            //    cookies[i].setDomain(uri.getHost());
-            //    cookies[i].setPath(uri.getPath());
+                cookies[i].setSecure(uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("https"));
+                cookies[i].setDomain(uri.getHost());
+                cookies[i].setPath(uri.getPath());
             }
         }
         return cookies;
     }
 
     /**
-     * Transforms a {@link ServerCookie} (from Apache Tomcat) into a {@link Cookie}
+     * Transforms a {@link ServerCookie} (from Apache Tomcat) into a {@link BasicClientCookie}
      * (from commons httpclient). Both types of Cookie hold the same data but the
      * {@link ServerCookie} is the type that you get when parsing cookies as a
      * Server.
      */
-    protected static Cookie transformServerCookieToClientCookie(ServerCookie serverCookie)
+    protected static BasicClientCookie transformServerCookieToClientCookie(ServerCookie serverCookie)
     {
         BasicClientCookie clientCookie = new BasicClientCookie(serverCookie.getName().toString(), serverCookie.getValue().toString());
         clientCookie.setDomain(serverCookie.getDomain().toString());
@@ -475,21 +474,19 @@ enum CookieStorageType
 
             // domain, path, secure (https) and expiry are handled in method
             // CookieHelper.addCookiesToClient()
-            //TODO(pablo.kraan): HTTPCLIENT - parse cookie
-            //final Cookie newSessionCookie = new Cookie(null, cookieName, cookieValue);
-            //final Cookie[] mergedCookiesArray;
-            //if (sessionIndex >= 0)
-            //{
-            //    preExistentCookiesArray[sessionIndex] = newSessionCookie;
-            //    mergedCookiesArray = preExistentCookiesArray;
-            //}
-            //else
-            //{
-            //    Cookie[] newSessionCookieArray = new Cookie[]{newSessionCookie};
-            //    mergedCookiesArray = concatenateCookies(preExistentCookiesArray, newSessionCookieArray);
-            //}
-            //return mergedCookiesArray;
-            return null;
+            final Cookie newSessionCookie = new BasicClientCookie(cookieName, cookieValue);
+            final Cookie[] mergedCookiesArray;
+            if (sessionIndex >= 0)
+            {
+                preExistentCookiesArray[sessionIndex] = newSessionCookie;
+                mergedCookiesArray = preExistentCookiesArray;
+            }
+            else
+            {
+                Cookie[] newSessionCookieArray = new Cookie[]{newSessionCookie};
+                mergedCookiesArray = concatenateCookies(preExistentCookiesArray, newSessionCookieArray);
+            }
+            return mergedCookiesArray;
         }
 
         protected Cookie[] concatenateCookies(Cookie[] cookies1, Cookie[] cookies2)

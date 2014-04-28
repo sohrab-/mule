@@ -6,25 +6,43 @@
  */
 package org.mule.transport.http.transformers;
 
+import org.mule.RequestContext;
+import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
+import org.mule.api.MuleMessageCollection;
 import org.mule.api.config.MuleProperties;
+import org.mule.api.transformer.DataType;
 import org.mule.api.transformer.TransformerException;
 import org.mule.api.transport.OutputHandler;
+import org.mule.api.transport.PropertyScope;
 import org.mule.transformer.AbstractMessageTransformer;
 import org.mule.transformer.types.DataTypeFactory;
 import org.mule.transport.NullPayload;
 import org.mule.transport.http.HttpConnector;
 import org.mule.transport.http.HttpConstants;
+import org.mule.transport.http.StreamPayloadRequestEntity;
 import org.mule.transport.http.i18n.HttpMessages;
+import org.mule.util.ObjectUtils;
+import org.mule.util.SerializationUtils;
 import org.mule.util.StringUtils;
 
+import java.io.InputStream;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.Map;
 
+import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.entity.StringEntity;
 
 /**
  * <code>ObjectToHttpClientMethodRequest</code> transforms a MuleMessage into a
@@ -112,8 +130,8 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
             //    }
             //}
             //
-            //setHeaders(httpMethod, msg);
-            //
+            setHeaders(httpMethod, msg);
+
             return httpMethod;
         }
         catch (final Exception e)
@@ -193,7 +211,7 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
 
         //TODO(pablo.kraan): HTTPCLIENT - fix this
         String bodyParameterName = getBodyParameterName(msg);
-        //Object src = msg.getPayload();
+        Object src = msg.getPayload();
         //if (src instanceof Map)
         //{
         //    for (Map.Entry<?, ?> entry : ((Map<?, ?>) src).entrySet())
@@ -208,22 +226,22 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         //}
         //else
         //{
-        //    setupEntityMethod(src, outputEncoding, msg, postMethod);
+            setupEntityMethod(src, outputEncoding, msg, postMethod);
         //}
-        //checkForContentType(msg, postMethod);
+        checkForContentType(msg, postMethod);
 
         return postMethod;
     }
 
-    //private void checkForContentType(MuleMessage msg, EntityEnclosingMethod method)
-    //{
-    //    // if a content type was specified on the endpoint, use it
-    //    String outgoingContentType = msg.getInvocationProperty(HttpConstants.HEADER_CONTENT_TYPE);
-    //    if (outgoingContentType != null)
-    //    {
-    //        method.setRequestHeader(HttpConstants.HEADER_CONTENT_TYPE, outgoingContentType);
-    //    }
-    //}
+    private void checkForContentType(MuleMessage msg, HttpEntityEnclosingRequest method)
+    {
+        // if a content type was specified on the endpoint, use it
+        String outgoingContentType = msg.getInvocationProperty(HttpConstants.HEADER_CONTENT_TYPE);
+        if (outgoingContentType != null)
+        {
+            method.setHeader(HttpConstants.HEADER_CONTENT_TYPE, outgoingContentType);
+        }
+    }
 
     protected String getBodyParameterName(MuleMessage message)
     {
@@ -294,133 +312,134 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         return new URI(endpointAddress);
     }
 
-    //TODO(pablo.kraan): HTTPCLIENT - fix this
-    //protected void setupEntityMethod(Object src,
-    //                                 String encoding,
-    //                                 MuleMessage msg,
-    //                                 EntityEnclosingMethod postMethod)
-    //    throws UnsupportedEncodingException, TransformerException
-    //{
-    //    // Dont set a POST payload if the body is a Null Payload.
-    //    // This way client calls can control if a POST body is posted explicitly
-    //    if (!(msg.getPayload() instanceof NullPayload))
-    //    {
-    //        String outboundMimeType = (String) msg.getProperty(HttpConstants.HEADER_CONTENT_TYPE,
-    //            PropertyScope.OUTBOUND);
-    //        if (outboundMimeType == null)
-    //        {
-    //            outboundMimeType = (getEndpoint() != null ? getEndpoint().getMimeType() : null);
-    //        }
-    //        if (outboundMimeType == null)
-    //        {
-    //            outboundMimeType = HttpConstants.DEFAULT_CONTENT_TYPE;
-    //            logger.info("Content-Type not set on outgoing request, defaulting to: " + outboundMimeType);
-    //        }
-    //
-    //        if (encoding != null && !"UTF-8".equals(encoding.toUpperCase())
-    //            && outboundMimeType.indexOf("charset") == -1)
-    //        {
-    //            outboundMimeType += "; charset=" + encoding;
-    //        }
-    //
-    //        // Ensure that we have a cached representation of the message if we're
-    //        // using HTTP 1.0
-    //        final String httpVersion = msg.getOutboundProperty(HttpConnector.HTTP_VERSION_PROPERTY,
-    //            HttpConstants.HTTP11);
-    //        if (HttpConstants.HTTP10.equals(httpVersion))
-    //        {
-    //            try
-    //            {
-    //                if (msg instanceof MuleMessageCollection)
-    //                {
-    //                    src = msg.getPayload(DataType.BYTE_ARRAY_DATA_TYPE);
-    //                }
-    //                else
-    //                {
-    //                    src = msg.getPayloadAsBytes();
-    //                }
-    //            }
-    //            catch (final Exception e)
-    //            {
-    //                throw new TransformerException(this, e);
-    //            }
-    //        }
-    //
-    //        if (msg.getOutboundAttachmentNames() != null && msg.getOutboundAttachmentNames().size() > 0)
-    //        {
-    //            try
-    //            {
-    //                postMethod.setRequestEntity(createMultiPart(msg, postMethod));
-    //                return;
-    //            }
-    //            catch (final Exception e)
-    //            {
-    //                throw new TransformerException(this, e);
-    //            }
-    //        }
-    //        if (src instanceof String)
-    //        {
-    //            postMethod.setRequestEntity(new StringRequestEntity(src.toString(), outboundMimeType,
-    //                encoding));
-    //            return;
-    //        }
-    //
-    //        if (src instanceof InputStream)
-    //        {
-    //            postMethod.setRequestEntity(new InputStreamRequestEntity((InputStream) src, outboundMimeType));
-    //        }
-    //        else if (src instanceof byte[])
-    //        {
-    //            postMethod.setRequestEntity(new ByteArrayRequestEntity((byte[]) src, outboundMimeType));
-    //        }
-    //        else if (src instanceof OutputHandler)
-    //        {
-    //            final MuleEvent event = RequestContext.getEvent();
-    //            postMethod.setRequestEntity(new StreamPayloadRequestEntity((OutputHandler) src, event));
-    //        }
-    //        else
-    //        {
-    //            final byte[] buffer = SerializationUtils.serialize((Serializable) src);
-    //            postMethod.setRequestEntity(new ByteArrayRequestEntity(buffer, outboundMimeType));
-    //        }
-    //    }
-    //    else if (msg.getOutboundAttachmentNames() != null && msg.getOutboundAttachmentNames().size() > 0)
-    //    {
-    //        try
-    //        {
-    //            postMethod.setRequestEntity(createMultiPart(msg, postMethod));
-    //        }
-    //        catch (Exception e)
-    //        {
-    //            throw new TransformerException(this, e);
-    //        }
-    //    }
-    //}
-    //
-    //protected void setHeaders(HttpMethod httpMethod, MuleMessage msg) throws TransformerException
-    //{
-    //    for (String headerName : msg.getOutboundPropertyNames())
-    //    {
-    //        String headerValue = ObjectUtils.getString(msg.getOutboundProperty(headerName), null);
-    //
-    //        if (headerName.startsWith(MuleProperties.PROPERTY_PREFIX))
-    //        {
-    //            // Define Mule headers a custom headers
-    //            headerName = new StringBuilder(30).append("X-").append(headerName).toString();
-    //            httpMethod.addRequestHeader(headerName, headerValue);
-    //
-    //        }
-    //
-    //        else if (!HttpConstants.RESPONSE_HEADER_NAMES.containsKey(headerName)
-    //                 && !HttpConnector.HTTP_INBOUND_PROPERTIES.contains(headerName)
-    //                 && !HttpConnector.HTTP_COOKIES_PROPERTY.equals(headerName))
-    //        {
-    //
-    //            httpMethod.addRequestHeader(headerName, headerValue);
-    //        }
-    //    }
-    //}
-    //
+    protected void setupEntityMethod(Object src,
+                                     String encoding,
+                                     MuleMessage msg,
+                                     HttpEntityEnclosingRequest postMethod)
+        throws UnsupportedEncodingException, TransformerException
+    {
+        // Dont set a POST payload if the body is a Null Payload.
+        // This way client calls can control if a POST body is posted explicitly
+        if (!(msg.getPayload() instanceof NullPayload))
+        {
+            String outboundMimeType = (String) msg.getProperty(HttpConstants.HEADER_CONTENT_TYPE,
+                PropertyScope.OUTBOUND);
+            if (outboundMimeType == null)
+            {
+                outboundMimeType = (getEndpoint() != null ? getEndpoint().getMimeType() : null);
+            }
+            if (outboundMimeType == null)
+            {
+                outboundMimeType = HttpConstants.DEFAULT_CONTENT_TYPE;
+                logger.info("Content-Type not set on outgoing request, defaulting to: " + outboundMimeType);
+            }
+
+            if (encoding != null && !"UTF-8".equals(encoding.toUpperCase())
+                && outboundMimeType.indexOf("charset") == -1)
+            {
+                outboundMimeType += "; charset=" + encoding;
+            }
+
+            // Ensure that we have a cached representation of the message if we're
+            // using HTTP 1.0
+            final String httpVersion = msg.getOutboundProperty(HttpConnector.HTTP_VERSION_PROPERTY,
+                HttpConstants.HTTP11);
+            if (HttpConstants.HTTP10.equals(httpVersion))
+            {
+                try
+                {
+                    if (msg instanceof MuleMessageCollection)
+                    {
+                        src = msg.getPayload(DataType.BYTE_ARRAY_DATA_TYPE);
+                    }
+                    else
+                    {
+                        src = msg.getPayloadAsBytes();
+                    }
+                }
+                catch (final Exception e)
+                {
+                    throw new TransformerException(this, e);
+                }
+            }
+
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
+            //if (msg.getOutboundAttachmentNames() != null && msg.getOutboundAttachmentNames().size() > 0)
+            //{
+            //    try
+            //    {
+            //        postMethod.setEntity(createMultiPart(msg, postMethod));
+            //        return;
+            //    }
+            //    catch (final Exception e)
+            //    {
+            //        throw new TransformerException(this, e);
+            //    }
+            //}
+            if (src instanceof String)
+            {
+                postMethod.setEntity(new StringEntity(src.toString(), outboundMimeType, encoding));
+                return;
+            }
+
+            if (src instanceof InputStream)
+            {
+                postMethod.setEntity(new InputStreamEntity((InputStream) src, ContentType.create(outboundMimeType)));
+            }
+            else if (src instanceof byte[])
+            {
+                Charset o = null;
+                postMethod.setEntity(new ByteArrayEntity((byte[]) src, ContentType.create(outboundMimeType)));
+            }
+            else if (src instanceof OutputHandler)
+            {
+                final MuleEvent event = RequestContext.getEvent();
+                postMethod.setEntity(new StreamPayloadRequestEntity((OutputHandler) src, event));
+            }
+            else
+            {
+                final byte[] buffer = SerializationUtils.serialize((Serializable) src);
+                postMethod.setEntity(new ByteArrayEntity(buffer, ContentType.create(outboundMimeType)));
+            }
+        }
+        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        //else if (msg.getOutboundAttachmentNames() != null && msg.getOutboundAttachmentNames().size() > 0)
+        //{
+        //    try
+        //    {
+        //        postMethod.setEntity(createMultiPart(msg, postMethod));
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        throw new TransformerException(this, e);
+        //    }
+        //}
+    }
+
+    protected void setHeaders(HttpRequest httpMethod, MuleMessage msg) throws TransformerException
+    {
+        for (String headerName : msg.getOutboundPropertyNames())
+        {
+            String headerValue = ObjectUtils.getString(msg.getOutboundProperty(headerName), null);
+
+            if (headerName.startsWith(MuleProperties.PROPERTY_PREFIX))
+            {
+                // Define Mule headers a custom headers
+                headerName = new StringBuilder(30).append("X-").append(headerName).toString();
+                httpMethod.addHeader(headerName, headerValue);
+
+            }
+
+            else if (!HttpConstants.RESPONSE_HEADER_NAMES.containsKey(headerName)
+                     && !HttpConnector.HTTP_INBOUND_PROPERTIES.contains(headerName)
+                     && !HttpConnector.HTTP_COOKIES_PROPERTY.equals(headerName))
+            {
+
+                httpMethod.addHeader(headerName, headerValue);
+            }
+        }
+    }
+
     //protected MultipartRequestEntity createMultiPart(MuleMessage msg, EntityEnclosingMethod method)
     //    throws Exception
     //{

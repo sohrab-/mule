@@ -24,7 +24,6 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.security.cert.Certificate;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import javax.net.ssl.HandshakeCompletedEvent;
@@ -32,9 +31,11 @@ import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.httpclient.ChunkedOutputStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.Header;
+import org.apache.http.HttpException;
 
 /**
  * A connection to the SimpleHttpServer.
@@ -195,7 +196,7 @@ public class HttpServerConnection implements HandshakeCompletedListener
         return new ResponseWriter(out);
     }
 
-    public HttpRequest readRequest() throws IOException
+    public HttpRequest readRequest() throws IOException, HttpException
     {
         if (cachedRequest != null)
         {
@@ -211,13 +212,16 @@ public class HttpServerConnection implements HandshakeCompletedListener
             close();
             throw e;
         }
+        catch (HttpException e)
+        {
+            close();
+            throw e;
+        }
     }
 
-    protected HttpRequest createHttpRequest() throws IOException
+    protected HttpRequest createHttpRequest() throws IOException, HttpException
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //return new HttpRequest(getRequestLine(), HttpParser.parseHeaders(this.in, encoding), this.in, encoding);
-        return null;
+        return new HttpRequest(getRequestLine(), HttpParser.parseHeaders(this.in, encoding), this.in, encoding);
     }
 
     public HttpResponse readResponse() throws IOException
@@ -238,23 +242,21 @@ public class HttpServerConnection implements HandshakeCompletedListener
 
     private String readLine() throws IOException
     {
-        //String line;
-        //
-        //do
-        //{
-        //    line = HttpParser.readLine(in, encoding);
-        //}
-        //while (line != null && line.length() == 0);
-        //
-        //if (line == null)
-        //{
-        //    setKeepAlive(false);
-        //    return null;
-        //}
-        //
-        //return line;
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        return null;
+        String line;
+
+        do
+        {
+            line = HttpParser.readLine(in, encoding);
+        }
+        while (line != null && line.length() == 0);
+
+        if (line == null)
+        {
+            setKeepAlive(false);
+            return null;
+        }
+
+        return line;
     }
 
     public void writeRequest(final HttpRequest request) throws IOException
@@ -332,8 +334,8 @@ public class HttpServerConnection implements HandshakeCompletedListener
         ResponseWriter writer = new ResponseWriter(this.out, encoding);
         OutputStream outstream = this.out;
 
+        writer.println(response.getStatusLine());
         //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //writer.println(response.getStatusLine());
         //Iterator item = response.getHeaderIterator();
         //while (item.hasNext())
         //{
@@ -344,26 +346,25 @@ public class HttpServerConnection implements HandshakeCompletedListener
         writer.flush();
 
         OutputHandler content = response.getBody();
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //if (content != null)
-        //{
-        //    Header transferenc = response.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
-        //    if (transferenc != null)
-        //    {
-        //        response.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
-        //        if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
-        //        {
-        //            outstream = new ChunkedOutputStream(outstream);
-        //        }
-        //    }
-        //
-        //    content.write(RequestContext.getEvent(), outstream);
-        //
-        //    if (outstream instanceof ChunkedOutputStream)
-        //    {
-        //        ((ChunkedOutputStream) outstream).finish();
-        //    }
-        //}
+        if (content != null)
+        {
+            Header transferenc = response.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
+            if (transferenc != null)
+            {
+                response.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
+                if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
+                {
+                    outstream = new ChunkedOutputStream(outstream);
+                }
+            }
+
+            content.write(RequestContext.getEvent(), outstream);
+
+            if (outstream instanceof ChunkedOutputStream)
+            {
+                ((ChunkedOutputStream) outstream).finish();
+            }
+        }
 
         outstream.flush();
     }
@@ -374,7 +375,7 @@ public class HttpServerConnection implements HandshakeCompletedListener
      * @return
      * @throws IOException
      */
-    public String getUrlWithoutRequestParams() throws IOException
+    public String getUrlWithoutRequestParams() throws IOException, HttpException
     {
         return readRequest().getUrlWithoutParams();
     }
@@ -433,7 +434,7 @@ public class HttpServerConnection implements HandshakeCompletedListener
      * @return the uri for the request including scheme, host, port and path. i.e: http://192.168.1.1:7777/service/orders
      * @throws IOException
      */
-    public String getFullUri() throws IOException
+    public String getFullUri() throws IOException, HttpException
     {
         String scheme = "http";
         if (socket instanceof SSLSocket)
@@ -559,15 +560,14 @@ public class HttpServerConnection implements HandshakeCompletedListener
         return peerCertificateChain;
     }
 
-    public RequestLine getRequestLine() throws IOException
+    public RequestLine getRequestLine() throws IOException, HttpException
     {
         if (this.requestLine == null)
         {
             String line = readLine();
             if (line != null)
             {
-                //TODO(pablo.kraan): HTTPCLIENT - fix this
-                //this.requestLine = RequestLine.parseLine(line);
+                this.requestLine = RequestLine.parseLine(line);
             }
         }
         return this.requestLine;

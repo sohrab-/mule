@@ -57,6 +57,7 @@ public class HttpRequest
                 if (transferEncoding.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
                 {
                     //TODO(pablo.kraan): HTTPCLIENT - use ChuckedInputStream
+                    //in = new ChunkedInputStream()
                     //in = new ChunkedInputStream(in);
                 }
             }
@@ -65,8 +66,8 @@ public class HttpRequest
                 long len = getContentLength();
                 if (len >= 0)
                 {
-                    //TODO(pablo.kraan): HTTPCLIENT - use ChuckedInputStream
-                    //in = new ContentLengthInputStream(in, len);
+                    //TODO(pablo.kraan): HTTPCLIENT - reintroduced old ContentLengthInputStream
+                    in = new ContentLengthInputStream(in, len);
                 }
             }
             this.entity = in;

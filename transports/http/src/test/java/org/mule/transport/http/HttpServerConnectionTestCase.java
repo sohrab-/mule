@@ -34,6 +34,7 @@ import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLSocket;
 
+import org.apache.http.HttpException;
 import org.hamcrest.core.IsInstanceOf;
 import org.hamcrest.core.IsNull;
 import org.junit.Test;
@@ -305,7 +306,7 @@ public class HttpServerConnectionTestCase extends AbstractMuleContextTestCase
         return new HttpServerConnection(mockSocket, muleContext.getConfiguration().getDefaultEncoding(), mockHttpConnector);
     }
 
-    private void testUrlWithoutParams(String requestUrl, String expectedUrlWithoutParams) throws IOException
+    private void testUrlWithoutParams(String requestUrl, String expectedUrlWithoutParams) throws IOException, HttpException
     {
         when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(String.format("GET %s HTTP/1.0\n", requestUrl).getBytes()));
         HttpServerConnection httpServerConnection = new HttpServerConnection(mockSocket, muleContext.getConfiguration().getDefaultEncoding(), mockHttpConnector);

@@ -16,6 +16,7 @@ import org.mule.tck.AbstractServiceAndFlowTestCase;
 import org.mule.tck.functional.EventCallback;
 import org.mule.tck.functional.FunctionalTestComponent;
 import org.mule.tck.junit4.rule.DynamicPort;
+import org.mule.tck.junit4.rule.SystemProperty;
 import org.mule.transport.http.HttpConnector;
 import org.mule.transport.http.HttpConstants;
 
@@ -33,8 +34,9 @@ public class HttpFunctionalTestCase extends AbstractServiceAndFlowTestCase
     protected static String TEST_MESSAGE = "Test Http Request (R�dgr�d), 57 = \u06f7\u06f5 in Arabic";
     protected boolean checkPathProperties = true;
 
+    //TODO(pablo.kraan): HTTPCLIENT : revert this change
     @Rule
-    public DynamicPort dynamicPort = new DynamicPort("port1");
+    public SystemProperty dynamicPort = new SystemProperty("port1", "8989");
 
     public HttpFunctionalTestCase(ConfigVariant variant, String configResources)
     {
@@ -45,9 +47,15 @@ public class HttpFunctionalTestCase extends AbstractServiceAndFlowTestCase
     public static Collection<Object[]> parameters()
     {
         return Arrays.asList(new Object[][]{
-            {ConfigVariant.SERVICE, "http-functional-test-service.xml"},
+            //{ConfigVariant.SERVICE, "http-functional-test-service.xml"},
             {ConfigVariant.FLOW, "http-functional-test-flow.xml"}
         });
+    }
+
+    @Override
+    public int getTestTimeoutSecs()
+    {
+        return 999999;
     }
 
     @Test

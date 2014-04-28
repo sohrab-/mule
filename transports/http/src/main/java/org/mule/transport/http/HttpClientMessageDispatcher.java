@@ -157,7 +157,14 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
             this.processMuleSession(event, httpMethod);
 
             // TODO can we use the return code for better reporting?
-            return client.execute(getHostConfig(uri), httpMethod);
+            try
+            {
+                return client.execute(getHostConfig(uri), httpMethod);
+            }
+            catch (Exception e)
+            {
+                return client.execute(getHostConfig(uri), httpMethod);
+            }
         }
         catch (IOException e)
         {

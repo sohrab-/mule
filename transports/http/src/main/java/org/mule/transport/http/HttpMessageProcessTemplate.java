@@ -9,6 +9,7 @@ package org.mule.transport.http;
 import org.mule.DefaultMuleEvent;
 import org.mule.DefaultMuleMessage;
 import org.mule.OptimizedRequestContext;
+import org.mule.RequestContext;
 import org.mule.api.DefaultMuleException;
 import org.mule.api.MessagingException;
 import org.mule.api.MuleEvent;
@@ -33,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.http.Header;
+import org.apache.http.HttpException;
 import org.apache.http.HttpVersion;
 import org.apache.http.message.BasicHeader;
 
@@ -231,25 +233,24 @@ public class HttpMessageProcessTemplate extends AbstractTransportMessageProcessT
         // according to rfc 2616 and http 1.1
         // the processing will continue and the request will be fully
         // read immediately after
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpVersion requestVersion = requestLine.getHttpVersion();
-        //if (HttpVersion.HTTP_1_1.equals(requestVersion))
-        //{
-        //    Header expectHeader = request.getFirstHeader(HttpConstants.HEADER_EXPECT);
-        //    if (expectHeader != null)
-        //    {
-        //        String expectHeaderValue = expectHeader.getValue();
-        //        if (HttpConstants.HEADER_EXPECT_CONTINUE_REQUEST_VALUE.equals(expectHeaderValue))
-        //        {
-        //            HttpResponse expected = new HttpResponse();
-        //            expected.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_CONTINUE);
-        //            final DefaultMuleEvent event = new DefaultMuleEvent(new DefaultMuleMessage(expected,
-        //                                          getMuleContext()), getInboundEndpoint(), getFlowConstruct());
-        //            RequestContext.setEvent(event);
-        //            httpServerConnection.writeResponse(transformResponse(expected));
-        //        }
-        //    }
-        //}
+        HttpVersion requestVersion = requestLine.getHttpVersion();
+        if (HttpVersion.HTTP_1_1.equals(requestVersion))
+        {
+            Header expectHeader = request.getFirstHeader(HttpConstants.HEADER_EXPECT);
+            if (expectHeader != null)
+            {
+                String expectHeaderValue = expectHeader.getValue();
+                if (HttpConstants.HEADER_EXPECT_CONTINUE_REQUEST_VALUE.equals(expectHeaderValue))
+                {
+                    HttpResponse expected = new HttpResponse();
+                    expected.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_CONTINUE);
+                    final DefaultMuleEvent event = new DefaultMuleEvent(new DefaultMuleMessage(expected,
+                                                  getMuleContext()), getInboundEndpoint(), getFlowConstruct());
+                    RequestContext.setEvent(event);
+                    httpServerConnection.writeResponse(transformResponse(expected));
+                }
+            }
+        }
     }
 
     /**
@@ -344,6 +345,10 @@ public class HttpMessageProcessTemplate extends AbstractTransportMessageProcessT
         {
             throw new DefaultMuleException(e);
         }
+        catch (HttpException e)
+        {
+            throw new DefaultMuleException(e);
+        }
         if (request == null)
         {
             throw new HttpMessageReceiver.EmptyRequestException();
@@ -379,6 +384,10 @@ public class HttpMessageProcessTemplate extends AbstractTransportMessageProcessT
             }
         }
         catch (IOException e)
+        {
+            return false;
+        }
+        catch (HttpException e)
         {
             return false;
         }
