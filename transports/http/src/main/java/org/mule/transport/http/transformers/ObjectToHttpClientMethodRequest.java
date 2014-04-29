@@ -15,6 +15,7 @@ import org.mule.api.transformer.DataType;
 import org.mule.api.transformer.TransformerException;
 import org.mule.api.transport.OutputHandler;
 import org.mule.api.transport.PropertyScope;
+import org.mule.message.ds.StringDataSource;
 import org.mule.transformer.AbstractMessageTransformer;
 import org.mule.transformer.types.DataTypeFactory;
 import org.mule.transport.NullPayload;
@@ -22,6 +23,7 @@ import org.mule.transport.http.HttpConnector;
 import org.mule.transport.http.HttpConstants;
 import org.mule.transport.http.StreamPayloadRequestEntity;
 import org.mule.transport.http.i18n.HttpMessages;
+import org.mule.util.IOUtils;
 import org.mule.util.ObjectUtils;
 import org.mule.util.SerializationUtils;
 import org.mule.util.StringUtils;
@@ -35,6 +37,11 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.Map;
 
+import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
+import javax.activation.URLDataSource;
+
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.HttpDelete;
@@ -49,6 +56,10 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.ByteArrayBody;
+import org.apache.http.entity.mime.content.ContentBody;
+import org.apache.http.entity.mime.content.StringBody;
 
 /**
  * <code>ObjectToHttpClientMethodRequest</code> transforms a MuleMessage into a
@@ -368,19 +379,18 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
                 }
             }
 
-            //TODO(pablo.kraan): HTTPCLIENT - fix this
-            //if (msg.getOutboundAttachmentNames() != null && msg.getOutboundAttachmentNames().size() > 0)
-            //{
-            //    try
-            //    {
-            //        postMethod.setEntity(createMultiPart(msg, postMethod));
-            //        return;
-            //    }
-            //    catch (final Exception e)
-            //    {
-            //        throw new TransformerException(this, e);
-            //    }
-            //}
+            if (msg.getOutboundAttachmentNames() != null && msg.getOutboundAttachmentNames().size() > 0)
+            {
+                try
+                {
+                    postMethod.setEntity(createMultiPart(msg));
+                    return;
+                }
+                catch (final Exception e)
+                {
+                    throw new TransformerException(this, e);
+                }
+            }
             if (src instanceof String)
             {
                 postMethod.setEntity(new StringEntity(src.toString(), outboundMimeType, encoding));
@@ -407,18 +417,17 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
                 postMethod.setEntity(new ByteArrayEntity(buffer, ContentType.create(outboundMimeType)));
             }
         }
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //else if (msg.getOutboundAttachmentNames() != null && msg.getOutboundAttachmentNames().size() > 0)
-        //{
-        //    try
-        //    {
-        //        postMethod.setEntity(createMultiPart(msg, postMethod));
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        throw new TransformerException(this, e);
-        //    }
-        //}
+        else if (msg.getOutboundAttachmentNames() != null && msg.getOutboundAttachmentNames().size() > 0)
+        {
+            try
+            {
+                postMethod.setEntity(createMultiPart(msg));
+            }
+            catch (Exception e)
+            {
+                throw new TransformerException(this, e);
+            }
+        }
     }
 
     protected void setHeaders(HttpRequest httpMethod, MuleMessage msg) throws TransformerException
@@ -445,52 +454,46 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         }
     }
 
-    //protected MultipartRequestEntity createMultiPart(MuleMessage msg, EntityEnclosingMethod method)
-    //    throws Exception
-    //{
-    //    Part[] parts;
-    //    int i = 0;
-    //    if (msg.getPayload() instanceof NullPayload)
-    //    {
-    //        parts = new Part[msg.getOutboundAttachmentNames().size()];
-    //    }
-    //    else
-    //    {
-    //        parts = new Part[msg.getOutboundAttachmentNames().size() + 1];
-    //        parts[i++] = new FilePart("payload", new ByteArrayPartSource("payload", msg.getPayloadAsBytes()));
-    //    }
-    //
-    //    for (final Iterator<String> iterator = msg.getOutboundAttachmentNames().iterator(); iterator.hasNext(); i++)
-    //    {
-    //        final String attachmentNames = iterator.next();
-    //        String fileName = attachmentNames;
-    //        final DataHandler dh = msg.getOutboundAttachment(attachmentNames);
-    //        if (dh.getDataSource() instanceof StringDataSource)
-    //        {
-    //            final StringDataSource ds = (StringDataSource) dh.getDataSource();
-    //            parts[i] = new StringPart(ds.getName(), IOUtils.toString(ds.getInputStream()));
-    //        }
-    //        else
-    //        {
-    //            if (dh.getDataSource() instanceof FileDataSource)
-    //            {
-    //                fileName = ((FileDataSource) dh.getDataSource()).getFile().getName();
-    //            }
-    //            else if (dh.getDataSource() instanceof URLDataSource)
-    //            {
-    //                fileName = ((URLDataSource) dh.getDataSource()).getURL().getFile();
-    //                // Don't use the whole file path, just the file name
-    //                final int x = fileName.lastIndexOf("/");
-    //                if (x > -1)
-    //                {
-    //                    fileName = fileName.substring(x + 1);
-    //                }
-    //            }
-    //            parts[i] = new FilePart(fileName, new ByteArrayPartSource(fileName,
-    //                IOUtils.toByteArray(dh.getInputStream())), dh.getContentType(), null);
-    //        }
-    //    }
-    //
-    //    return new MultipartRequestEntity(parts, method.getParams());
-    //}
+    protected HttpEntity createMultiPart(MuleMessage msg) throws Exception
+    {
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+        for (final String attachmentNames : msg.getOutboundAttachmentNames())
+        {
+            String fileName = attachmentNames;
+            final DataHandler dh = msg.getOutboundAttachment(attachmentNames);
+            if (dh.getDataSource() instanceof StringDataSource)
+            {
+                final StringDataSource ds = (StringDataSource) dh.getDataSource();
+                ContentBody contentBody = new StringBody(IOUtils.toString(ds.getInputStream()), ContentType.create(dh.getContentType()));
+                builder.addPart(ds.getName(), contentBody);
+            }
+            else
+            {
+                if (dh.getDataSource() instanceof FileDataSource)
+                {
+                    fileName = ((FileDataSource) dh.getDataSource()).getFile().getName();
+                }
+                else if (dh.getDataSource() instanceof URLDataSource)
+                {
+                    fileName = ((URLDataSource) dh.getDataSource()).getURL().getFile();
+                    // Don't use the whole file path, just the file name
+                    final int x = fileName.lastIndexOf("/");
+                    if (x > -1)
+                    {
+                        fileName = fileName.substring(x + 1);
+                    }
+                }
+                ContentBody contentBody = new ByteArrayBody(IOUtils.toByteArray(dh.getInputStream()), ContentType.create(dh.getContentType()), fileName);
+                builder.addPart(fileName, contentBody);
+            }
+        }
+
+        if (!(msg.getPayload() instanceof NullPayload))
+        {
+            ContentBody contentBody = new ByteArrayBody(msg.getPayloadAsBytes(), ContentType.DEFAULT_BINARY, "payload");
+            builder.addPart("payload", contentBody);
+        }
+
+        return builder.build();
+    }
 }

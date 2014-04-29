@@ -8,7 +8,6 @@ package org.mule.transport.http.functional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import org.mule.DefaultMuleMessage;
 import org.mule.api.MuleEventContext;
 import org.mule.api.MuleMessage;
@@ -58,12 +57,12 @@ public class HttpAttachmentsFunctionalTestCase extends AbstractServiceAndFlowTes
         ftc.setEventCallback(new EventCallback(){
             public void eventReceived(MuleEventContext context, Object component) throws Exception
             {
-                assertEquals("application/octet-stream; charset=ISO-8859-1", context.getMessage().getInboundProperty(MuleProperties.CONTENT_TYPE_PROPERTY));
+                assertEquals("application/octet-stream", context.getMessage().getInboundProperty(MuleProperties.CONTENT_TYPE_PROPERTY));
                 assertEquals("We should have an attachment", 1, context.getMessage().getInboundAttachmentNames().size());
                 DataHandler dh = context.getMessage().getInboundAttachment("attach1");
                 assertNotNull("DataHandler with name 'attach1' should not be null", dh);
                 assertEquals("We should have an attachment with foo", "foo" , IOUtils.toString(dh.getInputStream()));
-                assertEquals("text/plain; charset=ISO-8859-1", dh.getContentType());
+                assertEquals("text/plain", dh.getContentType());
             }
         });
 
