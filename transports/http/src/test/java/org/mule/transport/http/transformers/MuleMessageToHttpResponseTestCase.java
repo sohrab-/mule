@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.http.Header;
 import org.apache.http.cookie.Cookie;
+import org.apache.http.impl.cookie.BasicClientCookie;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,9 +42,8 @@ public class MuleMessageToHttpResponseTestCase extends AbstractMuleTestCase
         MuleMessage msg = mock(MuleMessage.class);
 
         Cookie[] cookiesOutbound = new Cookie[2];
-        //TODO(pablo.kraan): HTTPCLIENT - cookies
-        //cookiesOutbound[0] = new Cookie("domain", "name-out-1", "value-out-1");
-        //cookiesOutbound[1] = new Cookie("domain", "name-out-2", "value-out-2");
+        cookiesOutbound[0] = new BasicClientCookie("name-out-1", "value-out-1");
+        cookiesOutbound[1] = new BasicClientCookie( "name-out-2", "value-out-2");
 
         when(msg.getOutboundProperty("Set-Cookie")).thenReturn(cookiesOutbound);
         Set props = new HashSet();

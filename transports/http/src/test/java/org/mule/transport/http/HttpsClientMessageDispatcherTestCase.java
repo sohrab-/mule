@@ -6,6 +6,7 @@
  */
 package org.mule.transport.http;
 
+import static org.junit.Assert.assertEquals;
 import org.mule.api.endpoint.OutboundEndpoint;
 import org.mule.api.transport.Connector;
 import org.mule.tck.junit4.AbstractMuleTestCase;
@@ -13,6 +14,7 @@ import org.mule.tck.size.SmallTest;
 
 import java.net.URI;
 
+import org.apache.http.HttpHost;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -29,9 +31,10 @@ public class HttpsClientMessageDispatcherTestCase extends AbstractMuleTestCase
         HttpsClientMessageDispatcher dispatcher = new HttpsClientMessageDispatcher(oe);
 
         URI uri = new URI("https://www.mulesoft.org/");
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HostConfiguration hc1 = dispatcher.getHostConfig(uri);
-        //HostConfiguration hc2 = dispatcher.getHostConfig(uri);
-        //Assert.assertEquals(hc1, hc2);
+
+        HttpHost hc1 = dispatcher.getHostConfig(uri);
+        HttpHost hc2 = dispatcher.getHostConfig(uri);
+
+        assertEquals(hc1, hc2);
     }
 }

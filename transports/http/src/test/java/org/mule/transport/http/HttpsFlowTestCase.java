@@ -13,6 +13,7 @@ import org.mule.tck.junit4.rule.DynamicPort;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,9 +40,8 @@ public class HttpsFlowTestCase extends FunctionalTestCase
 
         assertEquals(HttpConstants.SC_OK, response.getStatusLine().getStatusCode());
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //String result = response.getEntity().getResponseBodyAsString();
-        //assertEquals("/?message=Hello received", result);
+        String result = EntityUtils.toString(response.getEntity());
+        assertEquals("/?message=Hello received", result);
     }
 }
 
