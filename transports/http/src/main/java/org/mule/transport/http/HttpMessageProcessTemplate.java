@@ -94,8 +94,7 @@ public class HttpMessageProcessTemplate extends AbstractTransportMessageProcessT
                 response = transformResponse(returnMessage);
             }
 
-            //TODO(pablo.kraan): HTTPCLIENT - fix this
-            //response.setupKeepAliveFromRequestVersion(request.getRequestLine().getHttpVersion());
+            response.setupKeepAliveFromRequestVersion(request.getRequestLine().getHttpVersion());
             HttpConnector httpConnector = (HttpConnector) getMessageReceiver().getEndpoint().getConnector();
             response.disableKeepAlive(!httpConnector.isKeepAlive());
 

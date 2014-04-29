@@ -37,8 +37,14 @@ import java.util.Map;
 
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
+import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpTrace;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -52,7 +58,7 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
 {
     public ObjectToHttpClientMethodRequest()
     {
-        setReturnDataType(DataTypeFactory.create(org.apache.http.HttpRequest.class));
+        setReturnDataType(DataTypeFactory.create(HttpRequest.class));
         registerSourceType(DataTypeFactory.MULE_MESSAGE);
         registerSourceType(DataTypeFactory.BYTE_ARRAY);
         registerSourceType(DataTypeFactory.STRING);
@@ -69,7 +75,7 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         String method = detectHttpMethod(msg);
         try
         {
-            org.apache.http.HttpRequest httpMethod = null;
+            HttpRequest httpMethod = null;
 
             if (HttpConstants.METHOD_GET.equals(method))
             {
@@ -79,35 +85,36 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
             {
                 httpMethod = createPostMethod(msg, outputEncoding);
             }
-            //else if (HttpConstants.METHOD_PUT.equalsIgnoreCase(method))
-            //{
-            //    httpMethod = createPutMethod(msg, outputEncoding);
-            //}
-            //else if (HttpConstants.METHOD_DELETE.equalsIgnoreCase(method))
-            //{
-            //    httpMethod = createDeleteMethod(msg);
-            //}
-            //else if (HttpConstants.METHOD_HEAD.equalsIgnoreCase(method))
-            //{
-            //    httpMethod = createHeadMethod(msg);
-            //}
-            //else if (HttpConstants.METHOD_OPTIONS.equalsIgnoreCase(method))
-            //{
-            //    httpMethod = createOptionsMethod(msg);
-            //}
-            //else if (HttpConstants.METHOD_TRACE.equalsIgnoreCase(method))
-            //{
-            //    httpMethod = createTraceMethod(msg);
-            //}
-            //else if (HttpConstants.METHOD_PATCH.equalsIgnoreCase(method))
-            //{
-            //    httpMethod = createPatchMethod(msg, outputEncoding);
-            //}
-            //else
-            //{
-            //    throw new TransformerException(HttpMessages.unsupportedMethod(method));
-            //}
-            //
+            else if (HttpConstants.METHOD_PUT.equalsIgnoreCase(method))
+            {
+                httpMethod = createPutMethod(msg, outputEncoding);
+            }
+            else if (HttpConstants.METHOD_DELETE.equalsIgnoreCase(method))
+            {
+                httpMethod = createDeleteMethod(msg);
+            }
+            else if (HttpConstants.METHOD_HEAD.equalsIgnoreCase(method))
+            {
+                httpMethod = createHeadMethod(msg);
+            }
+            else if (HttpConstants.METHOD_OPTIONS.equalsIgnoreCase(method))
+            {
+                httpMethod = createOptionsMethod(msg);
+            }
+            else if (HttpConstants.METHOD_TRACE.equalsIgnoreCase(method))
+            {
+                httpMethod = createTraceMethod(msg);
+            }
+            else if (HttpConstants.METHOD_PATCH.equalsIgnoreCase(method))
+            {
+                httpMethod = createPatchMethod(msg, outputEncoding);
+            }
+            else
+            {
+                throw new TransformerException(HttpMessages.unsupportedMethod(method));
+            }
+
+            //TODO(pablo.kraan): HTTPCLIENT - fix this
             //// Allow the user to set HttpMethodParams as an object on the message
             //final HttpMethodParams params = (HttpMethodParams) msg.removeProperty(
             //    HttpConnector.HTTP_PARAMS_PROPERTY, PropertyScope.OUTBOUND);
@@ -150,14 +157,14 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         return method;
     }
 
-    protected org.apache.http.HttpRequest createGetMethod(MuleMessage msg, String outputEncoding) throws Exception
+    protected HttpRequest createGetMethod(MuleMessage msg, String outputEncoding) throws Exception
     {
         final Object src = msg.getPayload();
         // TODO It makes testing much harder if we use the endpoint on the
         // transformer since we need to create correct message types and endpoints
         // URI uri = getEndpoint().getEndpointURI().getUri();
         final URI uri = getURI(msg);
-        org.apache.http.HttpRequest httpMethod;
+        HttpRequest httpMethod;
         String query = uri.getRawQuery();
 
         String paramName = msg.getOutboundProperty(HttpConnector.HTTP_GET_BODY_PARAM_PROPERTY, null);
@@ -204,30 +211,28 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         return httpMethod;
     }
 
-    protected org.apache.http.HttpRequest createPostMethod(MuleMessage msg, String outputEncoding) throws Exception
+    protected HttpRequest createPostMethod(MuleMessage msg, String outputEncoding) throws Exception
     {
         URI uri = getURI(msg);
         HttpPost postMethod = new HttpPost(uri.toString());
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
         String bodyParameterName = getBodyParameterName(msg);
         Object src = msg.getPayload();
-        //if (src instanceof Map)
-        //{
-        //    for (Map.Entry<?, ?> entry : ((Map<?, ?>) src).entrySet())
-        //    {
-        //        postMethod.addParameter(entry.getKey().toString(), entry.getValue().toString());
-        //    }
-        //}
-        //else if (bodyParameterName != null)
-        //{
-        //    postMethod.addParameter(bodyParameterName, src.toString());
-        //
-        //}
-        //else
-        //{
+        if (src instanceof Map)
+        {
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) src).entrySet())
+            {
+                postMethod.addHeader(entry.getKey().toString(), entry.getValue().toString());
+            }
+        }
+        else if (bodyParameterName != null)
+        {
+            postMethod.addHeader(bodyParameterName, src.toString());
+        }
+        else
+        {
             setupEntityMethod(src, outputEncoding, msg, postMethod);
-        //}
+        }
         checkForContentType(msg, postMethod);
 
         return postMethod;
@@ -253,52 +258,52 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         return bodyParameter;
     }
 
-    //TODO(pablo.kraan): HTTPCLIENT - fix this
-    //protected HttpMethod createPutMethod(MuleMessage msg, String outputEncoding) throws Exception
-    //{
-    //    URI uri = getURI(msg);
-    //    PutMethod putMethod = new PutMethod(uri.toString());
-    //
-    //    Object payload = msg.getPayload();
-    //    setupEntityMethod(payload, outputEncoding, msg, putMethod);
-    //    checkForContentType(msg, putMethod);
-    //    return putMethod;
-    //}
-    //
-    //protected HttpMethod createDeleteMethod(MuleMessage message) throws Exception
-    //{
-    //    URI uri = getURI(message);
-    //    return new DeleteMethod(uri.toString());
-    //}
-    //
-    //protected HttpMethod createHeadMethod(MuleMessage message) throws Exception
-    //{
-    //    URI uri = getURI(message);
-    //    return new HeadMethod(uri.toString());
-    //}
-    //
-    //protected HttpMethod createOptionsMethod(MuleMessage message) throws Exception
-    //{
-    //    URI uri = getURI(message);
-    //    return new OptionsMethod(uri.toString());
-    //}
-    //
-    //protected HttpMethod createTraceMethod(MuleMessage message) throws Exception
-    //{
-    //    URI uri = getURI(message);
-    //    return new TraceMethod(uri.toString());
-    //}
-    //
-    //protected HttpMethod createPatchMethod(MuleMessage message, String outputEncoding) throws Exception
-    //{
-    //    URI uri = getURI(message);
-    //    PatchMethod patchMethod = new PatchMethod(uri.toString());
-    //
-    //    Object payload = message.getPayload();
-    //    setupEntityMethod(payload, outputEncoding, message, patchMethod);
-    //    checkForContentType(message, patchMethod);
-    //    return patchMethod;
-    //}
+    protected HttpRequest createPutMethod(MuleMessage msg, String outputEncoding) throws Exception
+    {
+        URI uri = getURI(msg);
+        HttpPut putMethod = new HttpPut(uri.toString());
+
+        Object payload = msg.getPayload();
+        setupEntityMethod(payload, outputEncoding, msg, putMethod);
+        checkForContentType(msg, putMethod);
+
+        return putMethod;
+    }
+
+    protected HttpRequest createDeleteMethod(MuleMessage message) throws Exception
+    {
+        URI uri = getURI(message);
+        return new HttpDelete(uri.toString());
+    }
+
+    protected HttpRequest createHeadMethod(MuleMessage message) throws Exception
+    {
+        URI uri = getURI(message);
+        return new HttpHead(uri.toString());
+    }
+
+    protected HttpRequest createOptionsMethod(MuleMessage message) throws Exception
+    {
+        URI uri = getURI(message);
+        return new HttpOptions(uri.toString());
+    }
+
+    protected HttpRequest createTraceMethod(MuleMessage message) throws Exception
+    {
+        URI uri = getURI(message);
+        return new HttpTrace(uri.toString());
+    }
+
+    protected HttpRequest createPatchMethod(MuleMessage message, String outputEncoding) throws Exception
+    {
+        URI uri = getURI(message);
+        HttpPatch patchMethod = new HttpPatch(uri.toString());
+
+        Object payload = message.getPayload();
+        setupEntityMethod(payload, outputEncoding, message, patchMethod);
+        checkForContentType(message, patchMethod);
+        return patchMethod;
+    }
 
     protected URI getURI(MuleMessage message) throws URISyntaxException, TransformerException
     {

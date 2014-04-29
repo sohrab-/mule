@@ -7,6 +7,7 @@
 package org.mule.transport.http.functional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.tck.AbstractServiceAndFlowTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
@@ -16,12 +17,15 @@ import org.mule.util.StringUtils;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.params.CoreProtocolPNames;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -182,12 +186,9 @@ public class HttpKeepAliveFunctionalTestCase extends AbstractServiceAndFlowTestC
 
     private HttpClient setupHttpClient(HttpVersion version)
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpClientParams params = new HttpClientParams();
-        //params.setVersion(version);
-        //
-        //return new HttpClient(params);
-        return HttpClients.createDefault();
+        CloseableHttpClient minimal = HttpClients.createMinimal();
+        minimal.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, version);
+        return minimal;
     }
 
     private void doTestHttp(String url, String inConnectionHeaderValue, String expectedConnectionHeaderValue, HttpClient httpClient) throws Exception
@@ -216,19 +217,18 @@ public class HttpKeepAliveFunctionalTestCase extends AbstractServiceAndFlowTestC
         HttpResponse response = httpClient.execute(request);
         assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //String connectionHeader;
-        //if (httpClient.getParams().getVersion().equals(HttpVersion.HTTP_1_0))
-        //{
-        //    connectionHeader = response.getFirstHeader(HttpConstants.HEADER_CONNECTION).getValue();
-        //    assertNotNull(connectionHeader);
-        //}
-        //else
-        //{
-        //    Header responseHeader = request.getResponseHeader(HttpConstants.HEADER_CONNECTION);
-        //    connectionHeader = responseHeader != null ? responseHeader.getValue() : EMPTY;
-        //}
-        //assertEquals(expectedConnectionHeaderValue, connectionHeader);
+        String connectionHeader;
+        if (httpClient.getParams().getParameter(CoreProtocolPNames.PROTOCOL_VERSION).equals(HttpVersion.HTTP_1_0))
+        {
+            connectionHeader = response.getFirstHeader(HttpConstants.HEADER_CONNECTION).getValue();
+            assertNotNull(connectionHeader);
+        }
+        else
+        {
+            Header responseHeader = request.getFirstHeader(HttpConstants.HEADER_CONNECTION);
+            connectionHeader = responseHeader != null ? responseHeader.getValue() : EMPTY;
+        }
+        assertEquals(expectedConnectionHeaderValue, connectionHeader);
     }
 
     private InboundEndpoint getEndpoint(String endpointName)

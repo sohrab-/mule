@@ -283,9 +283,8 @@ public class HttpServerConnection implements HandshakeCompletedListener
 
         if (!response.isKeepAlive())
         {
-            //TODO(pablo.kraan): HTTPCLIENT - fix this
-            //Header header = new BasicHeader(HttpConstants.HEADER_CONNECTION, "close");
-            //response.setHeader(header);
+            Header header = new BasicHeader(HttpConstants.HEADER_CONNECTION, "close");
+            response.setHeader(header);
         }
 
         setKeepAlive(response.isKeepAlive());
