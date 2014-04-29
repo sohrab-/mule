@@ -15,6 +15,7 @@ import java.net.URI;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,6 +41,6 @@ public class HttpPatchTestCase extends FunctionalTestCase
 
         CloseableHttpResponse response = HttpClients.createMinimal().execute(patch);
 
-        assertEquals(REQUEST, response.getEntity().toString());
+        assertEquals(REQUEST, EntityUtils.toString(response.getEntity()));
     }
 }
