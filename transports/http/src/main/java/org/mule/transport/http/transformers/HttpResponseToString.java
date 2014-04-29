@@ -56,6 +56,7 @@ public class HttpResponseToString extends AbstractTransformer
             {
                 Header header = (Header)item.next();
                 writer.print(header.toString());
+                writer.print(ResponseWriter.CRLF);
             }
             writer.println();
             writer.flush();
