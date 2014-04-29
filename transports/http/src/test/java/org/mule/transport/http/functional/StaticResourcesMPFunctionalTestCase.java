@@ -7,12 +7,18 @@
 package org.mule.transport.http.functional;
 
 import static org.junit.Assert.assertEquals;
-
 import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.transport.http.HttpConstants;
 import org.mule.util.ClassUtils;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.util.EntityUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -27,10 +33,9 @@ public class StaticResourcesMPFunctionalTestCase extends FunctionalTestCase
     @ClassRule
     public static DynamicPort port3 = new DynamicPort("port3");
 
-    //TODO(pablo.kraan): HTTPCLIENT - fix this
-    //private HttpMethod method;
     private int responseCode;
     private String payload;
+    private HttpResponse response;
 
     public StaticResourcesMPFunctionalTestCase()
     {
@@ -126,17 +131,21 @@ public class StaticResourcesMPFunctionalTestCase extends FunctionalTestCase
 
     private void request(String url, boolean followRedirects) throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //method = new GetMethod(url);
-        //method.setFollowRedirects(followRedirects);
-        //responseCode = new HttpClient().executeMethod(method);
-        //payload = method.getResponseBodyAsString();
+        HttpGet method = new HttpGet(url);
+        HttpClientBuilder custom = HttpClients.custom();
+        if (followRedirects)
+        {
+            custom.setRedirectStrategy(new LaxRedirectStrategy());
+        }
+        HttpClient httpClient = custom.build();
+        response = httpClient.execute(method);
+        responseCode = response.getStatusLine().getStatusCode();
+        payload = EntityUtils.toString(response.getEntity());
     }
 
     private void assertResponseContentType(String contentType)
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertEquals(contentType, method.getResponseHeader("Content-Type").getValue());
+        assertEquals(contentType, response.getFirstHeader("Content-Type").getValue());
     }
 
     /**
@@ -149,14 +158,12 @@ public class StaticResourcesMPFunctionalTestCase extends FunctionalTestCase
         String url = String.format("http://localhost:%d/echo", port1.getNumber());
         request(url, true);
         assertEquals(HttpConstants.SC_OK, responseCode);
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertEquals(method.getResponseBodyAsString(), "/echo");
+        assertEquals("/echo", payload);
 
         url = String.format("https://localhost:%d/echo", port2.getNumber());
         request(url, true);
         assertEquals(HttpConstants.SC_OK, responseCode);
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertEquals(method.getResponseBodyAsString(), "/echo");
+        assertEquals("/echo", payload);
     }
 
     @Test
@@ -165,8 +172,7 @@ public class StaticResourcesMPFunctionalTestCase extends FunctionalTestCase
         String url = String.format("http://localhost:%d/", port3.getNumber());
         request(url, false);
         assertEquals(HttpConstants.SC_OK, responseCode);
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertEquals(method.getResponseBodyAsString(), "Test index.html");
+        assertEquals("Test index.html", payload);
     }
 
     @Test
@@ -177,5 +183,4 @@ public class StaticResourcesMPFunctionalTestCase extends FunctionalTestCase
         assertEquals(HttpConstants.SC_OK, responseCode);
         assertEquals(payload, "Test index.html");
     }
-
 }
