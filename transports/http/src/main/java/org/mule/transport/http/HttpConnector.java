@@ -35,7 +35,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.http.client.HttpClient;
+import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 /**
  * <code>HttpConnector</code> provides a way of receiving and sending http requests
@@ -175,7 +177,7 @@ public class HttpConnector extends TcpConnector
 
     private boolean enableCookies = false;
 
-    protected HttpConnectionManager clientConnectionManager;
+    protected HttpClientConnectionManager clientConnectionManager;
 
     //TODO(pablo.kraan): HTTPCLIENT - fix this
     //private IdleConnectionTimeoutThread connectionCleaner;
@@ -194,9 +196,9 @@ public class HttpConnector extends TcpConnector
     {
         super.doInitialise();
         //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //if (clientConnectionManager == null)
-        //{
-        //    clientConnectionManager = new MultiThreadedHttpConnectionManager();
+        if (clientConnectionManager == null)
+        {
+            clientConnectionManager = new PoolingHttpClientConnectionManager();
         //    String prop = System.getProperty("mule.http.disableCleanupThread");
         //    disableCleanupThread = prop != null && prop.equals("true");
         //    if (!disableCleanupThread)
@@ -239,7 +241,7 @@ public class HttpConnector extends TcpConnector
         //    }
         //
         //    clientConnectionManager.setParams(params);
-        //}
+        }
         //connection manager must be created during initialization due that devkit requires the connection manager before start phase.
         //That's why it not manager only during stop/start phases and must be created also here.
         if (connectionManager == null)
@@ -423,12 +425,12 @@ public class HttpConnector extends TcpConnector
     }
 
 
-    public HttpConnectionManager getClientConnectionManager()
+    public HttpClientConnectionManager getClientConnectionManager()
     {
         return clientConnectionManager;
     }
 
-    public void setClientConnectionManager(HttpConnectionManager clientConnectionManager)
+    public void setClientConnectionManager(HttpClientConnectionManager clientConnectionManager)
     {
         this.clientConnectionManager = clientConnectionManager;
     }
@@ -456,7 +458,8 @@ public class HttpConnector extends TcpConnector
         //}
         //
         //TODO(pablo.kraan): HTTPCLIENT - improve client creation
-        HttpClient client = HttpClients.createDefault();
+        HttpClient client = HttpClients.custom().build();
+
         //client.setState(state);
         //client.setHttpConnectionManager(getClientConnectionManager());
 

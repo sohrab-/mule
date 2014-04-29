@@ -9,6 +9,7 @@ package org.mule.transport.http;
 import org.mule.RequestContext;
 import org.mule.api.transport.Connector;
 import org.mule.api.transport.OutputHandler;
+import org.mule.util.IOUtils;
 import org.mule.util.SystemUtils;
 import org.mule.util.concurrent.Latch;
 
@@ -279,26 +280,25 @@ public class HttpServerConnection implements HandshakeCompletedListener
 
         OutputStream outstream = this.out;
         InputStream content = request.getBody();
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //if (content != null)
-        //{
-        //    Header transferenc = request.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
-        //    if (transferenc != null)
-        //    {
-        //        request.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
-        //        if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
-        //        {
-        //            outstream = new ChunkedOutputStream(outstream);
-        //        }
-        //    }
-        //
-        //    IOUtils.copy(content, outstream);
-        //
-        //    if (outstream instanceof ChunkedOutputStream)
-        //    {
-        //        ((ChunkedOutputStream) outstream).finish();
-        //    }
-        //}
+        if (content != null)
+        {
+            Header transferenc = request.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING);
+            if (transferenc != null)
+            {
+                request.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
+                if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
+                {
+                    outstream = new ChunkedOutputStream(outstream);
+                }
+            }
+
+            IOUtils.copy(content, outstream);
+
+            if (outstream instanceof ChunkedOutputStream)
+            {
+                ((ChunkedOutputStream) outstream).finish();
+            }
+        }
 
         outstream.flush();
     }
