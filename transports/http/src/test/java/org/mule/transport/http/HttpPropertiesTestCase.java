@@ -19,6 +19,7 @@ import java.util.HashMap;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,8 +39,7 @@ public class HttpPropertiesTestCase extends FunctionalTestCase
     {
         HttpGet httpGet = new HttpGet("http://localhost:" + dynamicPort.getNumber() + "/resources/client?id=1");
         CloseableHttpResponse response = HttpClients.createMinimal().execute(httpGet);
-        String result =  response.getEntity().toString();
-        assertEquals("Retrieving client with id = 1", result);
+        assertEquals("Retrieving client with id = 1", EntityUtils.toString(response.getEntity()));
     }
 
     @Test
