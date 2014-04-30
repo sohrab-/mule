@@ -8,6 +8,7 @@ package org.mule.transport.http.functional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.mule.api.MuleEventContext;
 import org.mule.api.MuleMessage;
@@ -20,7 +21,15 @@ import org.mule.transport.http.HttpConstants;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -61,30 +70,27 @@ public class HttpPersistentQueueTestCase extends AbstractServiceAndFlowTestCase
     @Test
     public void testPersistentMessageDeliveryWithGet() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //GetMethod method = new GetMethod("http://localhost:" + port + "/services/Echo?foo=bar");
-        //method.addRequestHeader(HttpConstants.HEADER_CONNECTION, "close");
-        //doTestPersistentMessageDelivery(method);
+        HttpGet method = new HttpGet("http://localhost:" + port + "/services/Echo?foo=bar");
+        method.addHeader(HttpConstants.HEADER_CONNECTION, "close");
+        doTestPersistentMessageDelivery(method);
     }
 
     @Test
     public void testPersistentMessageDeliveryWithPost() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //PostMethod method = new PostMethod("http://localhost:" + port + "/services/Echo");
-        //method.addRequestHeader(HttpConstants.HEADER_CONNECTION, "close");
-        //method.addParameter(new NameValuePair("foo", "bar"));
-        //doTestPersistentMessageDelivery(method);
+        HttpPost method = new HttpPost("http://localhost:" + port + "/services/Echo");
+        method.addHeader(HttpConstants.HEADER_CONNECTION, "close");
+        method.addHeader("foo", "bar");
+        doTestPersistentMessageDelivery(method);
     }
-    //TODO(pablo.kraan): HTTPCLIENT - fix this
-    //private void doTestPersistentMessageDelivery(HttpMethod httpMethod) throws Exception
-    //{
-    //    HttpClient client = new HttpClient();
-    //    int rc = client.executeMethod(httpMethod);
-    //
-    //    assertEquals(HttpStatus.SC_OK, rc);
-    //    assertTrue(messageDidArrive.await(RECEIVE_TIMEOUT, TimeUnit.MILLISECONDS));
-    //}
+    private void doTestPersistentMessageDelivery(HttpUriRequest httpMethod) throws Exception
+    {
+        HttpClient client = HttpClients.createMinimal();
+        HttpResponse response = client.execute(httpMethod);
+
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertTrue(messageDidArrive.await(RECEIVE_TIMEOUT, TimeUnit.MILLISECONDS));
+    }
     
     private static class Callback implements EventCallback
     {

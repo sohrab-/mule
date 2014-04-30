@@ -10,7 +10,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import org.mule.api.MuleEventContext;
 import org.mule.api.MuleMessage;
 import org.mule.api.client.MuleClient;
@@ -34,7 +33,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
-
+import org.apache.http.Header;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -70,19 +73,20 @@ public class HttpEncodingNonAsciiFunctionalTestCase extends FunctionalTestCase
         String encodedPayload = URLEncoder.encode(testMessage, "ISO-2022-JP");
         String url = String.format("http://localhost:%1d/get?%2s=%3s",
             dynamicPort.getNumber(), HttpConnector.DEFAULT_HTTP_GET_BODY_PARAM_PROPERTY, encodedPayload);
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //GetMethod method = new GetMethod(url);
-        //method.addRequestHeader(HttpConstants.HEADER_CONTENT_TYPE, PLAIN_CONTENT_TYPE_HEADER);
-        //int status = new HttpClient().executeMethod(method);
-        //assertEquals(HttpConstants.SC_OK, status);
-        //
-        //assertTrue(latch.await(RECEIVE_TIMEOUT, TimeUnit.MILLISECONDS));
-        //String expected = testMessage + " Received";
-        //String response = method.getResponseBodyAsString();
-        //assertEquals(expected, response);
-        //
-        //Header responseContentType = method.getResponseHeader(HttpConstants.HEADER_CONTENT_TYPE);
-        //assertEquals("text/plain;charset=EUC-JP", responseContentType.getValue());
+
+        HttpGet method = new HttpGet(url);
+        method.addHeader(HttpConstants.HEADER_CONTENT_TYPE, PLAIN_CONTENT_TYPE_HEADER);
+        CloseableHttpResponse httpResponse = HttpClients.createMinimal().execute(method);
+
+        assertEquals(HttpConstants.SC_OK, httpResponse.getStatusLine().getStatusCode());
+
+        assertTrue(latch.await(RECEIVE_TIMEOUT, TimeUnit.MILLISECONDS));
+        String expected = testMessage + " Received";
+        String response = EntityUtils.toString(httpResponse.getEntity());
+        assertEquals(expected, response);
+
+        Header responseContentType = httpResponse.getFirstHeader(HttpConstants.HEADER_CONTENT_TYPE);
+        assertEquals("text/plain;charset=EUC-JP", responseContentType.getValue());
     }
 
     @Test

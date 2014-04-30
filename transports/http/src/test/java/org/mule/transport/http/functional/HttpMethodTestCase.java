@@ -6,13 +6,29 @@
  */
 package org.mule.transport.http.functional;
 
+import static org.junit.Assert.assertEquals;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.tck.AbstractServiceAndFlowTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
+import org.mule.transport.http.HttpConstants;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
+import org.apache.http.client.methods.HttpPatch;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.HttpTrace;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -22,14 +38,13 @@ public class HttpMethodTestCase extends AbstractServiceAndFlowTestCase
     @ClassRule
     public static DynamicPort dynamicPort = new DynamicPort("port1");
 
-    //TODO(pablo.kraan): HTTPCLIENT - fix this
-    //private HttpClient client;
+    private HttpClient client;
 
     public HttpMethodTestCase(ConfigVariant variant, String configResources)
     {
         super(variant, configResources);
         setDisposeContextPerClass(true);
-        //client = new HttpClient();
+        client = HttpClients.createMinimal();
     }
 
     @Parameters
@@ -44,64 +59,57 @@ public class HttpMethodTestCase extends AbstractServiceAndFlowTestCase
     @Test
     public void testHead() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HeadMethod method = new HeadMethod(getHttpEndpointAddress());
-        //int statusCode = client.executeMethod(method);
-        //assertEquals(HttpStatus.SC_OK, statusCode);
+        HttpUriRequest method = new HttpHead(getHttpEndpointAddress());
+        HttpResponse response = client.execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     @Test
     public void testOptions() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //OptionsMethod method = new OptionsMethod(getHttpEndpointAddress());
-        //int statusCode = client.executeMethod(method);
-        //assertEquals(HttpStatus.SC_OK, statusCode);
+        HttpUriRequest method = new HttpOptions(getHttpEndpointAddress());
+        HttpResponse response = client.execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     @Test
     public void testPut() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //PutMethod method = new PutMethod(getHttpEndpointAddress());
-        //int statusCode = client.executeMethod(method);
-        //assertEquals(HttpStatus.SC_OK, statusCode);
+        HttpUriRequest method = new HttpPut(getHttpEndpointAddress());
+        HttpResponse response = client.execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     @Test
     public void testDelete() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //DeleteMethod method = new DeleteMethod(getHttpEndpointAddress());
-        //int statusCode = client.executeMethod(method);
-        //assertEquals(HttpStatus.SC_OK, statusCode);
+        HttpUriRequest method = new HttpDelete(getHttpEndpointAddress());
+        HttpResponse response = client.execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     @Test
     public void testTrace() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //TraceMethod method = new TraceMethod(getHttpEndpointAddress());
-        //int statusCode = client.executeMethod(method);
-        //assertEquals(HttpStatus.SC_OK, statusCode);
+        HttpUriRequest method = new HttpTrace(getHttpEndpointAddress());
+        HttpResponse response = client.execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     @Test
     public void testConnect() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //CustomHttpMethod method = new CustomHttpMethod(HttpConstants.METHOD_CONNECT, getHttpEndpointAddress());
-        //int statusCode = client.executeMethod(method);
-        //assertEquals(HttpStatus.SC_OK, statusCode);
+        CustomHttpMethod method = new CustomHttpMethod(HttpConstants.METHOD_CONNECT, getHttpEndpointAddress());
+        HttpResponse response = client.execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     @Test
     public void testPatch() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //PatchMethod method = new PatchMethod(getHttpEndpointAddress());
-        //int statusCode = client.executeMethod(method);
-        //assertEquals(HttpStatus.SC_OK, statusCode);
+        HttpUriRequest method = new HttpPatch(getHttpEndpointAddress());
+        HttpResponse response = client.execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     @Test
@@ -109,8 +117,8 @@ public class HttpMethodTestCase extends AbstractServiceAndFlowTestCase
     {
         //TODO(pablo.kraan): HTTPCLIENT - fix this
         //CustomHttpMethod method = new CustomHttpMethod("FOO", getHttpEndpointAddress());
-        //int statusCode = client.executeMethod(method);
-        //assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
+        //HttpResponse response = client.execute(method);
+        //assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusLine().getStatusCode());
     }
 
     private String getHttpEndpointAddress()
@@ -119,21 +127,21 @@ public class HttpMethodTestCase extends AbstractServiceAndFlowTestCase
         return httpEndpoint.getAddress();
     }
 
-    //TODO(pablo.kraan): HTTPCLIENT - fix this
-    //private static class CustomHttpMethod extends HttpMethodBase
-    //{
-    //    private final String method;
-    //
-    //    public CustomHttpMethod(String method, String url)
-    //    {
-    //        super(url);
-    //        this.method = method;
-    //    }
-    //
-    //    @Override
-    //    public String getName()
-    //    {
-    //        return method;
-    //    }
-    //}
+    private static class CustomHttpMethod extends HttpRequestBase
+    {
+        private final String method;
+
+        public CustomHttpMethod(String method, String url) throws URISyntaxException
+        {
+            super();
+            setURI(new URI(url));
+            this.method = method;
+        }
+
+        @Override
+        public String getMethod()
+        {
+            return method;
+        }
+    }
 }

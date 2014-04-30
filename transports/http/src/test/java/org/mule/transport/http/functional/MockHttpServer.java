@@ -7,7 +7,9 @@
 
 package org.mule.transport.http.functional;
 
+import org.mule.transport.http.HttpParser;
 import org.mule.transport.http.HttpRequest;
+import org.mule.transport.http.RequestLine;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -66,13 +68,10 @@ public abstract class MockHttpServer extends Object implements Runnable
     {
         try
         {
-            //TODO(pablo.kraan): HTTPCLIENT - fix this
-            //String line = HttpParser.readLine(in, encoding);
-            //RequestLine requestLine = RequestLine.parseLine(line);
-            //
-            //return new HttpRequest(requestLine, HttpParser.parseHeaders(in, encoding), in, encoding);
-            return null;
+            String line = HttpParser.readLine(in, encoding);
+            RequestLine requestLine = RequestLine.parseLine(line);
 
+            return new HttpRequest(requestLine, HttpParser.parseHeaders(in, encoding), in, encoding);
         }
         catch (Exception e)
         {
