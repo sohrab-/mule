@@ -19,11 +19,12 @@ import org.mule.tck.junit4.rule.DynamicPort;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.params.CoreProtocolPNames;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -65,10 +66,8 @@ public class HttpMessageReceiverMule4456TestCase extends AbstractServiceAndFlowT
     protected void doSetUp() throws Exception
     {
         super.doSetUp();
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpClientParams params = new HttpClientParams();
-        //params.setVersion(HttpVersion.HTTP_1_1);
         httpClient = HttpClients.createMinimal();
+        httpClient.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
         muleClient = muleContext.getClient();
     }
 
