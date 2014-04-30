@@ -27,11 +27,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.params.CookiePolicy;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.cookie.CookieOrigin;
 import org.apache.http.cookie.CookieSpec;
 import org.apache.http.cookie.MalformedCookieException;
+import org.apache.http.cookie.SetCookie;
+import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.impl.cookie.BestMatchSpec;
 import org.apache.http.impl.cookie.NetscapeDraftSpec;
@@ -552,14 +555,17 @@ enum CookieStorageType
             {
                 String host = destinationUri.getHost();
                 String path = destinationUri.getPath();
-                //TODO(pablo.kraan): HTTPCLIENT - parse cookie
-                //for (Cookie cookie : cookies)
-                //{
-                //    client.getState().addCookie(
-                //        new Cookie(host, cookie.getName(), cookie.getValue(), path, cookie.getExpiryDate(),
-                //            cookie.getSecure()));
-                //}
-                //client.getParams().setCookiePolicy(CookieHelper.getCookiePolicy(policy));
+                for (Cookie cookie : cookies)
+                {
+                    SetCookie newCookie = new BasicClientCookie(cookie.getName(), cookie.getValue());
+                    newCookie.setDomain(host);
+                    newCookie.setPath(path);
+                    newCookie.setExpiryDate(cookie.getExpiryDate());
+                    newCookie.setSecure(cookie.isSecure());
+                    ((AbstractHttpClient)client).getCookieStore().addCookie(newCookie);
+                }
+                client.getParams().setParameter(ClientPNames.COOKIE_POLICY,
+                    CookieHelper.getCookiePolicy(policy));
             }
         }
 
@@ -666,8 +672,7 @@ enum CookieStorageType
         {
             Map<String, String> cookieMap = (Map<String, String>) cookiesObject;
 
-            //TODO(pablo.kraan): HTTPCLIENT - set cookie policy
-            //client.getParams().setCookiePolicy(CookieHelper.getCookiePolicy(policy));
+            client.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookieHelper.getCookiePolicy(policy));
 
             String host = destinationUri.getHost();
             String path = destinationUri.getPath();
@@ -686,9 +691,10 @@ enum CookieStorageType
                 {
                     value = cookieValue;
                 }
-                //TODO(pablo.kraan): HTTPCLIENT - parse cookie
-                //Cookie cookie = new Cookie(host, key, value, path, null, false);
-                //client.getState().addCookie(cookie);
+                SetCookie cookie = new BasicClientCookie(key, value);
+                cookie.setDomain(host);
+                cookie.setPath(path);
+                ((AbstractHttpClient) client).getCookieStore().addCookie(cookie);
             }
 
         }
