@@ -142,21 +142,20 @@ public class MuleServletTestCase extends AbstractMuleTestCase
         // ensure cookies work for shiro
         response.addCookie(new Cookie("cookie1", "value"));
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //org.apache.http.client.Cookie[] cookies = message.getOutboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
-        //assertNotNull(cookies);
-        //org.apache.http.client.Cookie cookie = cookies[0];
-        //assertEquals("cookie1", cookie.getName());
-        //assertEquals("value", cookie.getValue());
-        //
-        //response.addCookie(new Cookie("cookie2", "value"));
-        //cookies = message.getOutboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
-        //assertNotNull(cookies);
-        //assertEquals(2, cookies.length);
-        //
-        //cookie = cookies[1];
-        //assertEquals("cookie2", cookie.getName());
-        //assertEquals("value", cookie.getValue());
+        org.apache.http.cookie.Cookie[] cookies = message.getOutboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
+        assertNotNull(cookies);
+        org.apache.http.cookie.Cookie cookie = cookies[0];
+        assertEquals("cookie1", cookie.getName());
+        assertEquals("value", cookie.getValue());
+
+        response.addCookie(new Cookie("cookie2", "value"));
+        cookies = message.getOutboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
+        assertNotNull(cookies);
+        assertEquals(2, cookies.length);
+
+        cookie = cookies[1];
+        assertEquals("cookie2", cookie.getName());
+        assertEquals("value", cookie.getValue());
     }
 
     private DefaultMuleEvent getTestHttpEvent(String queryParam) throws EndpointException

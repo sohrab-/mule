@@ -25,6 +25,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.http.impl.cookie.BasicClientCookie;
+
 
 /**
  * THIS CLASS IS UNSUPPORTED AND THE IMPLEMENTATION DOES NOT CONFORM TO THE SERVLET SPECIFICATION!
@@ -136,19 +138,13 @@ public class MuleHttpServletResponse implements HttpServletResponse
 
     private org.apache.http.cookie.Cookie toHttpClientCookie(Cookie cookie)
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-//        org.apache.http.cookie.Cookie internal = new org.apache.http.cookie.Cookie();
-//
-//        internal.setName(cookie.getName());
-//        internal.setValue(cookie.getValue());
-//        internal.setComment(cookie.getComment());
-//        internal.setDomain(cookie.getDomain());
-////        internal.setExpiryDate(toExpiry(cookie.getMaxAge()));
-//        internal.setPath(cookie.getPath());
-//        internal.setVersion(cookie.getVersion());
+        BasicClientCookie internal = new BasicClientCookie(cookie.getName(), cookie.getValue());
+        internal.setComment(cookie.getComment());
+        internal.setDomain(cookie.getDomain());
+        internal.setPath(cookie.getPath());
+        internal.setVersion(cookie.getVersion());
 
-
-        return null;
+        return internal;
     }
 
     public boolean containsHeader(String name)
