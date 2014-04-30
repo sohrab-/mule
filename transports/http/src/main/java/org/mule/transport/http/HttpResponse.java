@@ -64,9 +64,8 @@ public class HttpResponse
         {
             throw new IllegalArgumentException("Status line may not be null");
         }
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //setStatusLine(HttpVersion.parse(statusline.getHttpVersion()), statusline.getStatusCode(),
-        //    statusline.getReasonPhrase());
+        setStatusLine((HttpVersion) statusline.getProtocolVersion(), statusline.getStatusCode(),
+            statusline.getReasonPhrase());
         setHeaders(headers);
         if (content != null)
         {
