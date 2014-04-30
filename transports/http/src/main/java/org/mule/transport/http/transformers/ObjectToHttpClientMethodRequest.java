@@ -44,6 +44,7 @@ import javax.activation.URLDataSource;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
+import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -52,6 +53,7 @@ import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpTrace;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -60,6 +62,8 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.ByteArrayBody;
 import org.apache.http.entity.mime.content.ContentBody;
 import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.message.BasicLineParser;
+import org.apache.http.params.HttpParams;
 
 /**
  * <code>ObjectToHttpClientMethodRequest</code> transforms a MuleMessage into a
@@ -86,7 +90,7 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
 
         try
         {
-            HttpRequest httpMethod;
+            HttpRequestBase httpMethod;
 
             if (HttpConstants.METHOD_GET.equals(method))
             {
@@ -135,17 +139,8 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
             //}
             //else
             //{
-            //    // TODO we should probably set other properties here
-            //    final String httpVersion = msg.getOutboundProperty(HttpConnector.HTTP_VERSION_PROPERTY,
-            //        HttpConstants.HTTP11);
-            //    if (HttpConstants.HTTP10.equals(httpVersion))
-            //    {
-            //        httpMethod.getParams().setVersion(HttpVersion.HTTP_1_0);
-            //    }
-            //    else
-            //    {
-            //        httpMethod.getParams().setVersion(HttpVersion.HTTP_1_1);
-            //    }
+            httpMethod.setProtocolVersion(BasicLineParser.parseProtocolVersion(
+                msg.getOutboundProperty(HttpConnector.HTTP_VERSION_PROPERTY, HttpConstants.HTTP11), null));
             //}
             //
             setHeaders(httpMethod, msg);
@@ -168,7 +163,7 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         return method;
     }
 
-    protected HttpRequest createGetMethod(MuleMessage msg, String outputEncoding) throws Exception
+    protected HttpRequestBase createGetMethod(MuleMessage msg, String outputEncoding) throws Exception
     {
         final Object src = msg.getPayload();
         URI uri = getURI(msg);
@@ -217,7 +212,7 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         return new HttpGet(uri);
     }
 
-    protected HttpRequest createPostMethod(MuleMessage msg, String outputEncoding) throws Exception
+    protected HttpRequestBase createPostMethod(MuleMessage msg, String outputEncoding) throws Exception
     {
         URI uri = getURI(msg);
         HttpPost postMethod = new HttpPost(uri.toString());
@@ -264,7 +259,7 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         return bodyParameter;
     }
 
-    protected HttpRequest createPutMethod(MuleMessage msg, String outputEncoding) throws Exception
+    protected HttpRequestBase createPutMethod(MuleMessage msg, String outputEncoding) throws Exception
     {
         URI uri = getURI(msg);
         HttpPut putMethod = new HttpPut(uri.toString());
@@ -276,31 +271,31 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         return putMethod;
     }
 
-    protected HttpRequest createDeleteMethod(MuleMessage message) throws Exception
+    protected HttpRequestBase createDeleteMethod(MuleMessage message) throws Exception
     {
         URI uri = getURI(message);
         return new HttpDelete(uri.toString());
     }
 
-    protected HttpRequest createHeadMethod(MuleMessage message) throws Exception
+    protected HttpRequestBase createHeadMethod(MuleMessage message) throws Exception
     {
         URI uri = getURI(message);
         return new HttpHead(uri.toString());
     }
 
-    protected HttpRequest createOptionsMethod(MuleMessage message) throws Exception
+    protected HttpRequestBase createOptionsMethod(MuleMessage message) throws Exception
     {
         URI uri = getURI(message);
         return new HttpOptions(uri.toString());
     }
 
-    protected HttpRequest createTraceMethod(MuleMessage message) throws Exception
+    protected HttpRequestBase createTraceMethod(MuleMessage message) throws Exception
     {
         URI uri = getURI(message);
         return new HttpTrace(uri.toString());
     }
 
-    protected HttpRequest createPatchMethod(MuleMessage message, String outputEncoding) throws Exception
+    protected HttpRequestBase createPatchMethod(MuleMessage message, String outputEncoding) throws Exception
     {
         URI uri = getURI(message);
         HttpPatch patchMethod = new HttpPatch(uri.toString());
