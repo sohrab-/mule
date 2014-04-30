@@ -6,15 +6,31 @@
  */
 package org.mule.transport.http.transformers;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import org.mule.DefaultMessageCollection;
 import org.mule.RequestContext;
+import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
 import org.mule.api.MuleMessageCollection;
+import org.mule.api.config.MuleProperties;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.tck.junit4.AbstractMuleContextTestCase;
 import org.mule.transport.NullPayload;
 import org.mule.transport.http.HttpConnector;
 import org.mule.transport.http.HttpConstants;
+import org.mule.transport.http.HttpRequest;
+import org.mule.transport.http.RequestLine;
+import org.mule.util.SerializationUtils;
 
+import java.io.Serializable;
+
+import org.apache.http.HttpVersion;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.util.EntityUtils;
 import org.junit.Test;
 
 public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContextTestCase
@@ -24,37 +40,33 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
     
     private MuleMessage setupRequestContext(final String url, final String method) throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpRequest request = new HttpRequest(new RequestLine(method, url, HttpVersion.HTTP_1_1), null, "UTF-8");
-        //
-        //endpoint = muleContext.getEndpointFactory().getInboundEndpoint(url);
-        //
-        //MuleEvent event = getTestEvent(request, endpoint);
-        //MuleMessage message = event.getMessage();
-        //message.setOutboundProperty(HttpConnector.HTTP_METHOD_PROPERTY, method);
-        //message.setOutboundProperty(MuleProperties.MULE_ENDPOINT_PROPERTY, url);
-        //RequestContext.setEvent(event);
-        //
-        //return message;
-        return null;
+        HttpRequest request = new HttpRequest(new RequestLine(method, url, HttpVersion.HTTP_1_1), null, "UTF-8");
+
+        endpoint = muleContext.getEndpointFactory().getInboundEndpoint(url);
+
+        MuleEvent event = getTestEvent(request, endpoint);
+        MuleMessage message = event.getMessage();
+        message.setOutboundProperty(HttpConnector.HTTP_METHOD_PROPERTY, method);
+        message.setOutboundProperty(MuleProperties.MULE_ENDPOINT_PROPERTY, url);
+        RequestContext.setEvent(event);
+
+        return message;
     }
     
     private MuleMessageCollection setupRequestContextForCollection(final String url, final String method) throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpRequest request = new HttpRequest(new RequestLine(method, url, HttpVersion.HTTP_1_1), null, "UTF-8");
-        //
-        //endpoint = muleContext.getEndpointFactory().getInboundEndpoint(url);
-        //
-        //MuleEvent event = getTestEvent(request, endpoint);
-        //MuleMessageCollection message = new DefaultMessageCollection(muleContext);
-        //message.setOutboundProperty(HttpConnector.HTTP_METHOD_PROPERTY, method);
-        //message.setOutboundProperty(MuleProperties.MULE_ENDPOINT_PROPERTY, url);
-        //RequestContext.setEvent(event);
-        //
-        //return message;
-        return null;
-    }    
+        HttpRequest request = new HttpRequest(new RequestLine(method, url, HttpVersion.HTTP_1_1), null, "UTF-8");
+
+        endpoint = muleContext.getEndpointFactory().getInboundEndpoint(url);
+
+        MuleEvent event = getTestEvent(request, endpoint);
+        MuleMessageCollection message = new DefaultMessageCollection(muleContext);
+        message.setOutboundProperty(HttpConnector.HTTP_METHOD_PROPERTY, method);
+        message.setOutboundProperty(MuleProperties.MULE_ENDPOINT_PROPERTY, url);
+        RequestContext.setEvent(event);
+
+        return message;
+    }
 
     private ObjectToHttpClientMethodRequest createTransformer() throws Exception
     {
@@ -81,11 +93,10 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
         ObjectToHttpClientMethodRequest transformer = createTransformer();
         Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(response instanceof HttpMethod);
-        //HttpMethod httpMethod = (HttpMethod) response;
-        //
-        //assertEquals(null, httpMethod.getQueryString());
+        assertTrue(response instanceof HttpGet);
+        HttpGet httpMethod = (HttpGet) response;
+
+        assertEquals(null, httpMethod.getURI().getQuery());
     }
 
     @Test
@@ -98,11 +109,9 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
         ObjectToHttpClientMethodRequest transformer = createTransformer();
         Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(response instanceof HttpMethod);
-        //HttpMethod httpMethod = (HttpMethod) response;
-        //
-        //assertEquals("method=echo", httpMethod.getQueryString());
+        assertTrue(response instanceof HttpGet);
+        HttpGet httpMethod = (HttpGet) response;
+        assertEquals("method=echo", httpMethod.getURI().getQuery());
     }
 
     @Test
@@ -115,11 +124,9 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
         ObjectToHttpClientMethodRequest transformer = createTransformer();
         Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(response instanceof HttpMethod);
-        //HttpMethod httpMethod = (HttpMethod) response;
-        //
-        //assertEquals("fruits=apple%20orange", httpMethod.getQueryString());
+        assertTrue(response instanceof HttpGet);
+        HttpGet httpMethod = (HttpGet) response;
+        assertEquals("fruits=apple%20orange", httpMethod.getURI().getQuery());
     }
 
     @Test
@@ -133,11 +140,9 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
         ObjectToHttpClientMethodRequest transformer = createTransformer();
         Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(response instanceof HttpMethod);
-        //HttpMethod httpMethod = (HttpMethod) response;
-        //
-        //assertEquals("fruits=apple%20orange&body=test", httpMethod.getQueryString());
+        assertTrue(response instanceof HttpGet);
+        HttpGet httpMethod = (HttpGet) response;
+        assertEquals("fruits=apple%20orange&body=test", httpMethod.getURI().getQuery());
     }
 
     @Test
@@ -152,15 +157,15 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
 
 
         ObjectToHttpClientMethodRequest transformer = createTransformer();
-        Object result = transformer.transform(message);
+        Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(result instanceof GetMethod);
-        //
-        //String expected = "body=" + encodedPayload;
-        //assertEquals(expected, ((GetMethod) result).getQueryString());
+        assertTrue(response instanceof HttpGet);
+        HttpGet httpMethod = (HttpGet) response;
+        String expected = "body=" + encodedPayload;
+        assertEquals(expected, httpMethod.getURI().getQuery());
     }
 
+    @Test
     public void testPostMethod() throws Exception
     {
     	final MuleMessage message = setupRequestContext("http://localhost:8080/services", HttpConstants.METHOD_POST);
@@ -172,14 +177,13 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
         final ObjectToHttpClientMethodRequest transformer = createTransformer();
         final Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(response instanceof PostMethod);
-        //final HttpMethod httpMethod = (HttpMethod) response;
-        //assertEquals(null, httpMethod.getQueryString());
-        //
-        //assertEquals(contentType, httpMethod.getRequestHeader(HttpConstants.HEADER_CONTENT_TYPE).getValue());
+        assertTrue(response instanceof HttpPost);
+        HttpPost httpMethod = (HttpPost) response;
+        assertEquals(null, httpMethod.getURI().getQuery());
+        assertEquals(contentType, httpMethod.getFirstHeader(HttpConstants.HEADER_CONTENT_TYPE).getValue());
     }
 
+    @Test
     public void testPutMethod() throws Exception
     {
     	final MuleMessage message = setupRequestContext("http://localhost:8080/services", HttpConstants.METHOD_PUT);
@@ -191,12 +195,10 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
         final ObjectToHttpClientMethodRequest transformer = createTransformer();
         final Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(response instanceof PutMethod);
-        //final HttpMethod httpMethod = (HttpMethod) response;
-        //assertEquals(null, httpMethod.getQueryString());
-        //
-        //assertEquals(contentType, httpMethod.getRequestHeader(HttpConstants.HEADER_CONTENT_TYPE).getValue());
+        assertTrue(response instanceof HttpPut);
+        HttpPut httpMethod = (HttpPut) response;
+        assertEquals(null, httpMethod.getURI().getQuery());
+        assertEquals(contentType, httpMethod.getFirstHeader(HttpConstants.HEADER_CONTENT_TYPE).getValue());
     }
     
     @Test
@@ -213,12 +215,10 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
         final ObjectToHttpClientMethodRequest transformer = createTransformer();
         final Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(response instanceof PostMethod);
-        //final HttpMethod httpMethod = (HttpMethod) response;
-        //assertEquals(null, httpMethod.getQueryString());
-        //final byte[] byteArrayContent = ((ByteArrayRequestEntity)((PostMethod)httpMethod).getRequestEntity()).getContent();
-        //assertArrayEquals(payload.getBytes(), byteArrayContent);
+        assertTrue(response instanceof HttpPost);
+        HttpPost httpMethod = (HttpPost) response;
+        assertEquals(null, httpMethod.getURI().getQuery());
+        assertEquals(payload, EntityUtils.toString(httpMethod.getEntity()));
     }
 
     @Test
@@ -237,14 +237,11 @@ public class ObjectToHttpClientMethodRequestTestCase extends AbstractMuleContext
         final ObjectToHttpClientMethodRequest transformer = createTransformer();
         final Object response = transformer.transform(message);
 
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertTrue(response instanceof PostMethod);
-        //final HttpMethod httpMethod = (HttpMethod) response;
-        //assertEquals(null, httpMethod.getQueryString());
-        //final byte[] byteArrayContent = ((ByteArrayRequestEntity)((PostMethod)httpMethod).getRequestEntity()).getContent();
-        //final byte[] expectedByteArrayContent = SerializationUtils.serialize((Serializable) message.getPayload());
-        //assertArrayEquals(expectedByteArrayContent, byteArrayContent);
+        assertTrue(response instanceof HttpPost);
+        HttpPost httpMethod = (HttpPost) response;
+        assertEquals(null, httpMethod.getURI().getQuery());
+        final byte[] byteArrayContent = EntityUtils.toByteArray(((HttpPost) response).getEntity());
+        final byte[] expectedByteArrayContent = SerializationUtils.serialize((Serializable) message.getPayload());
+        assertArrayEquals(expectedByteArrayContent, byteArrayContent);
     }
-
-
 }

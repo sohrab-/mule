@@ -82,11 +82,11 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
     @Override
     public Object transformMessage(MuleMessage msg, String outputEncoding) throws TransformerException
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
         String method = detectHttpMethod(msg);
+
         try
         {
-            HttpRequest httpMethod = null;
+            HttpRequest httpMethod;
 
             if (HttpConstants.METHOD_GET.equals(method))
             {
@@ -171,11 +171,8 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
     protected HttpRequest createGetMethod(MuleMessage msg, String outputEncoding) throws Exception
     {
         final Object src = msg.getPayload();
-        // TODO It makes testing much harder if we use the endpoint on the
-        // transformer since we need to create correct message types and endpoints
-        // URI uri = getEndpoint().getEndpointURI().getUri();
-        final URI uri = getURI(msg);
-        HttpRequest httpMethod;
+        URI uri = getURI(msg);
+
         String query = uri.getRawQuery();
 
         String paramName = msg.getOutboundProperty(HttpConnector.HTTP_GET_BODY_PARAM_PROPERTY, null);
@@ -212,14 +209,12 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
             }
         }
 
-        //TODO(pablo.kraan): HTTPCLIENT - check that this way of creating the uri is correct
-        String baseUri = uri.toString();
         if (!StringUtils.isEmpty(query))
         {
-            baseUri = baseUri + "?" + query;
+            uri = new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), uri.getPath(), query, null);
         }
-        httpMethod = new HttpGet(baseUri);
-        return httpMethod;
+
+        return new HttpGet(uri);
     }
 
     protected HttpRequest createPostMethod(MuleMessage msg, String outputEncoding) throws Exception
