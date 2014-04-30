@@ -31,6 +31,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpVersion;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicLineParser;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -212,8 +213,7 @@ public class MuleMessageToHttpResponse extends AbstractMessageTransformer
         //    logger.warn("Content-Type was not set, defaulting to: " + contentType);
         //}
 
-        //TODO(pablo.kraan): HTTPCLIENT - parse HTTP version
-        //response.setStatusLine(HttpVersion.parse(version), status);
+        response.setStatusLine((HttpVersion) BasicLineParser.parseProtocolVersion(version, null), status);
         response.setStatusLine(HttpVersion.HTTP_1_1, status);
         if (contentType != null)
         {
