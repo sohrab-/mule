@@ -9,7 +9,6 @@ package org.mule.transport.http;
 import org.mule.RequestContext;
 import org.mule.api.transport.Connector;
 import org.mule.api.transport.OutputHandler;
-import org.mule.util.IOUtils;
 import org.mule.util.SystemUtils;
 import org.mule.util.concurrent.Latch;
 
@@ -39,6 +38,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicLineParser;
 
 /**
  * A connection to the SimpleHttpServer.
@@ -227,19 +227,17 @@ public class HttpServerConnection implements HandshakeCompletedListener
         return new HttpRequest(getRequestLine(), HttpParser.parseHeaders(this.in, encoding), this.in, encoding);
     }
 
-    public HttpResponse readResponse() throws IOException
+    public HttpResponse readResponse() throws IOException, HttpException
     {
         try
         {
             String line = readLine();
-            //TODO(pablo.kraan): HTTPCLIENT - fix this
-            //return new HttpResponse(new StatusLine(line), HttpParser.parseHeaders(this.in, encoding), this.in);
-            return null;
+            return new HttpResponse(BasicLineParser.parseStatusLine(line, BasicLineParser.DEFAULT),
+                HttpParser.parseHeaders(this.in, encoding), this.in);
         }
-        catch (IOException e)
+        finally
         {
             close();
-            throw e;
         }
     }
 
@@ -360,8 +358,9 @@ public class HttpServerConnection implements HandshakeCompletedListener
      * @param statusCode  http status code to send to the client
      * @param description description to send as the body of the response
      * @throws IOException when it's not possible to write the response back to the client.
+     * @throws HttpException 
      */
-    public void writeFailureResponse(int statusCode, String description) throws IOException
+    public void writeFailureResponse(int statusCode, String description) throws IOException, HttpException
     {
         writeFailureResponse(statusCode, description, new HashMap<String,String>());
     }
@@ -374,12 +373,13 @@ public class HttpServerConnection implements HandshakeCompletedListener
      * @param description message to be send as the body
      * @param headers headers to send with the failure response
      * @throws IOException
+     * @throws HttpException 
      */
-    public void writeFailureResponse(int statusCode, String description, Map<String, String> headers) throws IOException
+    public void writeFailureResponse(int statusCode, String description, Map<String, String> headers)
+        throws IOException, HttpException
     {
         HttpResponse response = new HttpResponse();
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //response.setStatusLine(readRequest().getRequestLine().getHttpVersion(), statusCode);
+        response.setStatusLine(readRequest().getRequestLine().getHttpVersion(), statusCode);
         response.setBody(description);
         addHeadersToHttpResponse(response, headers);
         writeResponse(response);
@@ -389,8 +389,7 @@ public class HttpServerConnection implements HandshakeCompletedListener
     {
         for (String headerName : headers.keySet())
         {
-            //TODO(pablo.kraan): HTTPCLIENT - fix this
-            //response.addHeader(new Header(headerName, headers.get(headerName)));
+            response.addHeader(new BasicHeader(headerName, headers.get(headerName)));
         }
     }
 

@@ -449,6 +449,10 @@ public class HttpMessageProcessTemplate extends AbstractTransportMessageProcessT
         {
             throw new DefaultMuleException(e);
         }
+        catch (HttpException e)
+        {
+            throw new DefaultMuleException(e);
+        }
     }
 
     @Override
@@ -459,7 +463,7 @@ public class HttpMessageProcessTemplate extends AbstractTransportMessageProcessT
         this.timeUntilNextPeriodInMillis = timeUntilNextPeriodInMillis;
     }
 
-    private void sendFailureResponseToClient(int httpStatus, String message) throws IOException
+    private void sendFailureResponseToClient(int httpStatus, String message) throws IOException, HttpException
     {
         httpServerConnection.writeFailureResponse(httpStatus,message,getThrottlingHeaders());
     }
