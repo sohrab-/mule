@@ -6,6 +6,12 @@
  */
 package org.mule.transport.http.reliability;
 
+import static org.junit.Assert.assertEquals;
+import org.mule.transport.http.HttpConstants;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.junit.Test;
 
 /**
@@ -28,38 +34,34 @@ public class InboundMessageLossAsynchTestCase extends InboundMessageLossTestCase
     @Override
     public void testNoException() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpMethodBase request = createRequest(getBaseUri() + "/noException");
-        //int status = httpClient.executeMethod(request);
-        //assertEquals(HttpConstants.SC_OK, status);
+        HttpUriRequest request = createRequest(getBaseUri() + "/noException");
+        HttpResponse response = httpClient.execute(request);
+        assertEquals(HttpConstants.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     @Test
     @Override
     public void testHandledTransformerException() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpMethodBase request = createRequest(getBaseUri() + "/handledTransformerException");
-        //int status = httpClient.executeMethod(request);
-        //assertEquals(HttpConstants.SC_OK, status);
-        }
+        HttpUriRequest request = createRequest(getBaseUri() + "/handledTransformerException");
+        HttpResponse response = httpClient.execute(request);
+        assertEquals(HttpConstants.SC_OK, response.getStatusLine().getStatusCode());
+    }
 
     @Test
     @Override
     public void testComponentException() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpMethodBase request = createRequest(getBaseUri() + "/componentException");
-        //int status = httpClient.executeMethod(request);
-        //// Component exception occurs after the SEDA queue for an asynchronous request, so from the client's
-        //// perspective, the message has been delivered successfully.
-        //assertEquals(HttpConstants.SC_OK, status);
+        HttpUriRequest request = createRequest(getBaseUri() + "/componentException");
+        HttpResponse response = httpClient.execute(request);
+        // Component exception occurs after the SEDA queue for an asynchronous request, so from the client's
+        // perspective, the message has been delivered successfully.
+        assertEquals(HttpConstants.SC_OK, response.getStatusLine().getStatusCode());
     }
 
-    //TODO(pablo.kraan): HTTPCLIENT - fix this
-    //@Override
-    //protected HttpMethodBase createRequest(String uri)
-    //{
-    //    return new PostMethod(uri);
-    //}
+    @Override
+    protected HttpUriRequest createRequest(String uri)
+    {
+        return new HttpPost(uri);
+    }
 }

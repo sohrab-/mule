@@ -7,6 +7,7 @@
 package org.mule.transport.http.reliability;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import org.mule.DefaultMuleEvent;
 import org.mule.DefaultMuleMessage;
 import org.mule.api.MessagingException;
@@ -24,7 +25,9 @@ import org.mule.transport.http.HttpConstants;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -61,66 +64,60 @@ public class InboundMessageLossTestCase extends FunctionalTestCase
     @Test
     public void testNoException() throws Exception
     {
-        HttpGet request = createRequest(getBaseUri() + "/noException");
+        HttpUriRequest request = createRequest(getBaseUri() + "/noException");
         HttpResponse response = httpClient.execute(request);
         assertEquals(HttpConstants.SC_OK, response.getStatusLine().getStatusCode());
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //assertEquals("Here you go", request.getResponseBodyAsString());
+        assertEquals("Here you go", EntityUtils.toString(response.getEntity()));
     }
     
     @Test
     public void testTransformerException() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpMethodBase request = createRequest(getBaseUri() + "/transformerException");
-        //int status = httpClient.executeMethod(request);
-        //assertEquals(HttpConstants.SC_INTERNAL_SERVER_ERROR, status);
-        //assertTrue(request.getResponseBodyAsString().contains("Failure"));
+        HttpUriRequest request = createRequest(getBaseUri() + "/transformerException");
+        HttpResponse response = httpClient.execute(request);
+        assertEquals(HttpConstants.SC_INTERNAL_SERVER_ERROR, response.getStatusLine().getStatusCode());
+        assertTrue(EntityUtils.toString(response.getEntity()).contains("Failure"));
     }
 
     @Test
     public void testHandledTransformerException() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpMethodBase request = createRequest(getBaseUri() + "/handledTransformerException");
-        //int status = httpClient.executeMethod(request);
-        //assertEquals(HttpConstants.SC_OK, status);
-        //assertTrue(request.getResponseBodyAsString().contains("Success"));
+        HttpUriRequest request = createRequest(getBaseUri() + "/handledTransformerException");
+        HttpResponse response = httpClient.execute(request);
+        assertEquals(HttpConstants.SC_OK, response.getStatusLine().getStatusCode());
+        assertTrue(EntityUtils.toString(response.getEntity()).contains("Success"));
     }
 
     @Test
     public void testNotHandledTransformerException() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpMethodBase request = createRequest(getBaseUri() + "/notHandledTransformerException");
-        //int status = httpClient.executeMethod(request);
-        //assertEquals(HttpConstants.SC_INTERNAL_SERVER_ERROR, status);
-        //assertTrue(request.getResponseBodyAsString().contains("Bad news"));
+        HttpUriRequest request = createRequest(getBaseUri() + "/notHandledTransformerException");
+        HttpResponse response = httpClient.execute(request);
+        assertEquals(HttpConstants.SC_INTERNAL_SERVER_ERROR, response.getStatusLine().getStatusCode());
+        assertTrue(EntityUtils.toString(response.getEntity()).contains("Bad news"));
     }
 
     @Test
     public void testRouterException() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpMethodBase request = createRequest(getBaseUri() + "/routerException");
-        //int status = httpClient.executeMethod(request);
-        //assertEquals(HttpConstants.SC_INTERNAL_SERVER_ERROR, status);
-        //assertTrue(request.getResponseBodyAsString().contains("Failure"));
+        HttpUriRequest request = createRequest(getBaseUri() + "/routerException");
+        HttpResponse response = httpClient.execute(request);
+        assertEquals(HttpConstants.SC_INTERNAL_SERVER_ERROR, response.getStatusLine().getStatusCode());
+        assertTrue(EntityUtils.toString(response.getEntity()).contains("Failure"));
     }
     
     @Test
     public void testComponentException() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpMethodBase request = createRequest(getBaseUri() + "/componentException");
-        //int status = httpClient.executeMethod(request);
-        //// Component exception occurs after the SEDA queue for an asynchronous request, but since
-        //// this request is synchronous, the failure propagates back to the client.
-        //assertEquals(HttpConstants.SC_INTERNAL_SERVER_ERROR, status);
-        //assertTrue(request.getResponseBodyAsString().contains("exception"));
+        HttpUriRequest request = createRequest(getBaseUri() + "/componentException");
+        HttpResponse response = httpClient.execute(request);
+        // Component exception occurs after the SEDA queue for an asynchronous request, but since
+        // this request is synchronous, the failure propagates back to the client.
+        assertEquals(HttpConstants.SC_INTERNAL_SERVER_ERROR, response.getStatusLine().getStatusCode());
+        assertTrue(EntityUtils.toString(response.getEntity()).contains("exception"));
     }
 
-    protected HttpGet createRequest(String uri)
+    protected HttpUriRequest createRequest(String uri)
     {
         return new HttpGet(uri);
     }
