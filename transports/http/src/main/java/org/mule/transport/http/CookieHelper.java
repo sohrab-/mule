@@ -26,15 +26,14 @@ import java.util.TimeZone;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.params.CookiePolicy;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.cookie.CookieOrigin;
 import org.apache.http.cookie.CookieSpec;
 import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.cookie.SetCookie;
-import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.impl.cookie.BestMatchSpec;
 import org.apache.http.impl.cookie.NetscapeDraftSpec;
@@ -357,14 +356,14 @@ public class CookieHelper
      * @param destinationUri the host, port and path of this {@link URI} will be used
      *            as the data of the cookies that are added.
      */
-    public static void addCookiesToClient(HttpClient client,
+    public static void addCookiesToClient(CookieStore cookieStore,
                                           Object cookiesObject,
-                                             String policy,
-                                             MuleEvent event,
-                                             URI destinationUri)
+                                          String policy,
+                                          MuleEvent event,
+                                          URI destinationUri)
     {
-        CookieStorageType.resolveCookieStorageType(cookiesObject).addCookiesToClient(client, cookiesObject,
-            policy, event, destinationUri);
+        CookieStorageType.resolveCookieStorageType(cookiesObject).addCookiesToClient(cookieStore,
+            cookiesObject, policy, event, destinationUri);
     }
 
     /**
@@ -543,7 +542,7 @@ enum CookieStorageType
         }
 
         @Override
-        public void addCookiesToClient(HttpClient client,
+        public void addCookiesToClient(CookieStore cookieStore,
                                        Object cookiesObject,
                                        String policy,
                                        MuleEvent event,
@@ -562,10 +561,8 @@ enum CookieStorageType
                     newCookie.setPath(path);
                     newCookie.setExpiryDate(cookie.getExpiryDate());
                     newCookie.setSecure(cookie.isSecure());
-                    ((AbstractHttpClient)client).getCookieStore().addCookie(newCookie);
+                    cookieStore.addCookie(newCookie);
                 }
-                client.getParams().setParameter(ClientPNames.COOKIE_POLICY,
-                    CookieHelper.getCookiePolicy(policy));
             }
         }
 
@@ -664,16 +661,13 @@ enum CookieStorageType
 
         @Override
         @SuppressWarnings("unchecked")
-        public void addCookiesToClient(HttpClient client,
+        public void addCookiesToClient(CookieStore cookieStore,
                                        Object cookiesObject,
                                        String policy,
                                        MuleEvent event,
                                        URI destinationUri)
         {
             Map<String, String> cookieMap = (Map<String, String>) cookiesObject;
-
-            client.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookieHelper.getCookiePolicy(policy));
-
             String host = destinationUri.getHost();
             String path = destinationUri.getPath();
             Iterator<String> keyIter = cookieMap.keySet().iterator();
@@ -694,7 +688,7 @@ enum CookieStorageType
                 SetCookie cookie = new BasicClientCookie(key, value);
                 cookie.setDomain(host);
                 cookie.setPath(path);
-                ((AbstractHttpClient) client).getCookieStore().addCookie(cookie);
+                cookieStore.addCookie(cookie);
             }
 
         }
@@ -795,7 +789,7 @@ enum CookieStorageType
      * @see CookieHelper#addCookiesToClient(HttpClient, Object, String, MuleEvent,
      *      URI)
      */
-    public abstract void addCookiesToClient(HttpClient client,
+    public abstract void addCookiesToClient(CookieStore cookieStore,
                                             Object cookiesObject,
                                             String policy,
                                             MuleEvent event,

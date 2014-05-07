@@ -35,9 +35,12 @@ import java.util.List;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 
@@ -161,11 +164,14 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
 
             URI uri = endpoint.getEndpointURI().getUri();
 
-            this.processCookies(event);
             this.processMuleSession(event, httpMethod);
 
-            // TODO can we use the return code for better reporting?
-            return client.execute(getHostConfig(uri), httpMethod);
+            CookieStore cookieStore = new BasicCookieStore();
+            HttpClientContext context = HttpClientContext.create();
+            context.setCookieStore(cookieStore);
+            this.processCookies(event, cookieStore);
+
+            return client.execute(getHostConfig(uri), httpMethod, context);
         }
         catch (IOException e)
         {
@@ -188,27 +194,22 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
         }
     }
 
-    protected void processCookies(MuleEvent event)
+    protected void processCookies(MuleEvent event, CookieStore cookieStore)
     {
         MuleMessage msg = event.getMessage();
+        URI uri = this.getEndpoint().getEndpointURI().getUri();
 
         Object cookiesProperty = msg.getInboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
         String cookieSpecProperty = msg.getInboundProperty(HttpConnector.HTTP_COOKIE_SPEC_PROPERTY);
-        processCookies(cookiesProperty, cookieSpecProperty, event);
+        CookieHelper.addCookiesToClient(cookieStore, cookiesProperty, cookieSpecProperty, event, uri);
 
         cookiesProperty = msg.getOutboundProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
         cookieSpecProperty = msg.getOutboundProperty(HttpConnector.HTTP_COOKIE_SPEC_PROPERTY);
-        processCookies(cookiesProperty, cookieSpecProperty, event);
+        CookieHelper.addCookiesToClient(cookieStore, cookiesProperty, cookieSpecProperty, event, uri);
 
         cookiesProperty = endpoint.getProperty(HttpConnector.HTTP_COOKIES_PROPERTY);
         cookieSpecProperty = (String) endpoint.getProperty(HttpConnector.HTTP_COOKIE_SPEC_PROPERTY);
-        processCookies(cookiesProperty, cookieSpecProperty, event);
-    }
-
-    private void processCookies(Object cookieObject, String policy, MuleEvent event)
-    {
-        URI uri = this.getEndpoint().getEndpointURI().getUri();
-        CookieHelper.addCookiesToClient(this.client, cookieObject, policy, event, uri);
+        CookieHelper.addCookiesToClient(cookieStore, cookiesProperty, cookieSpecProperty, event, uri);
     }
 
     protected org.apache.http.HttpRequest getMethod(MuleEvent event) throws TransformerException
@@ -234,6 +235,8 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
                 .setConnectTimeout(((TcpConnector) connector).getConnectionTimeout())
                 .setRedirectsEnabled(
                     "true".equalsIgnoreCase((String) endpoint.getProperty("followRedirects")))
+                .setCookieSpec(
+                    CookieHelper.getCookiePolicy((String) endpoint.getProperty(HttpConnector.HTTP_COOKIE_SPEC_PROPERTY)))
                 .build();
             ((HttpRequestBase) httpMethod).setConfig(config);
         }
