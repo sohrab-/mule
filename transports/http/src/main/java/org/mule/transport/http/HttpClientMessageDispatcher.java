@@ -269,9 +269,10 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
         //
         //httpMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, new MuleHttpMethodRetryHandler());
         boolean releaseConn = false;
+        org.apache.http.HttpResponse httpResponse = null;
         try
         {
-            org.apache.http.HttpResponse httpResponse = execute(event, httpMethod);
+            httpResponse = execute(event, httpMethod);
 
             DefaultExceptionPayload ep = null;
 
@@ -308,8 +309,10 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
         {
             if (releaseConn)
             {
-                //TODO(pablo.kraan): HTTPCLIENT - fix this
-                //httpMethod.releaseConnection();
+                if (httpResponse != null)
+                {
+                    EntityUtils.consumeQuietly(httpResponse.getEntity());
+                }
             }
         }
     }

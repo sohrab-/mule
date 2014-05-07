@@ -422,8 +422,7 @@ public class HttpMessageProcessTemplate extends AbstractTransportMessageProcessT
         MuleEvent event = new DefaultMuleEvent(message, getInboundEndpoint(), getFlowConstruct());
         OptimizedRequestContext.unsafeSetEvent(event);
         HttpResponse response = new HttpResponse();
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //response.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_BAD_REQUEST);
+        response.setStatusLine(requestLine.getHttpVersion(), HttpConstants.SC_BAD_REQUEST);
         response.setBody(HttpMessages.malformedSyntax().toString() + HttpConstants.CRLF);
         return transformResponse(response);
     }

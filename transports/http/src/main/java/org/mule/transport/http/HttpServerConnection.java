@@ -33,12 +33,14 @@ import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
-import org.apache.commons.httpclient.ChunkedOutputStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.impl.EnglishReasonPhraseCatalog;
+import org.apache.http.impl.io.ChunkedOutputStream;
+import org.apache.http.impl.io.HttpTransportMetricsImpl;
+import org.apache.http.impl.io.SessionOutputBufferImpl;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicLineParser;
 
@@ -311,7 +313,10 @@ public class HttpServerConnection implements HandshakeCompletedListener
                 response.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
                 if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
                 {
-                    outstream = new ChunkedOutputStream(outstream);
+                    SessionOutputBufferImpl sessionOutputBuffer = new SessionOutputBufferImpl(
+                        new HttpTransportMetricsImpl(), 2048);
+                    sessionOutputBuffer.bind(outstream);
+                    outstream = new ChunkedOutputStream(2048, sessionOutputBuffer);
                 }
             }
 

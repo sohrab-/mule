@@ -7,11 +7,15 @@
 package org.mule.transport.http;
 
 import static org.junit.Assert.assertEquals;
+
 import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 
+import javax.net.ssl.HostnameVerifier;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
@@ -34,7 +38,9 @@ public class HttpsFlowTestCase extends FunctionalTestCase
         String url = String.format("https://localhost:%1d/?message=Hello", dynamicPort.getNumber());
 
         HttpGet method = new HttpGet(url);
-        HttpClient client = HttpClients.createMinimal();
+        HttpClient client = HttpClients.custom()
+            .setHostnameVerifier(SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER)
+            .build();
 
         org.apache.http.HttpResponse response = client.execute(method);
 

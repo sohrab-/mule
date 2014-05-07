@@ -19,6 +19,8 @@ import org.mule.api.transport.MessageReceiver;
 import org.mule.api.transport.NoReceiverForEndpointException;
 import org.mule.config.i18n.CoreMessages;
 import org.mule.transport.http.i18n.HttpMessages;
+import org.mule.transport.http.ntlm.JCIFSNTLMSchemeFactory;
+import org.mule.transport.http.util.IdleConnectionTimeoutThread;
 import org.mule.transport.tcp.TcpConnector;
 import org.mule.util.MapUtils;
 
@@ -28,17 +30,39 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
+import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
+
+import org.apache.http.auth.AuthSchemeProvider;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.NTCredentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.config.ConnectionConfig;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.config.SocketConfig.Builder;
 import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.impl.auth.BasicSchemeFactory;
+import org.apache.http.impl.auth.DigestSchemeFactory;
+import org.apache.http.impl.auth.KerberosSchemeFactory;
+import org.apache.http.impl.auth.SPNegoSchemeFactory;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
@@ -182,8 +206,7 @@ public class HttpConnector extends TcpConnector
 
     protected HttpClientConnectionManager clientConnectionManager;
 
-    //TODO(pablo.kraan): HTTPCLIENT - fix this
-    //private IdleConnectionTimeoutThread connectionCleaner;
+    private IdleConnectionTimeoutThread connectionCleaner;
 
     private boolean disableCleanupThread;
 
@@ -198,59 +221,55 @@ public class HttpConnector extends TcpConnector
     protected void doInitialise() throws InitialisationException
     {
         super.doInitialise();
-        // TODO(pablo.kraan): HTTPCLIENT - fix this
         if (clientConnectionManager == null)
         {
-            Builder socketConfigBuilder = SocketConfig.custom();
-            if (getSocketSoLinger() != INT_VALUE_NOT_SET)
+            try
             {
-                socketConfigBuilder.setSoLinger(getSocketSoLinger());
+                Builder socketConfigBuilder = SocketConfig.custom();
+                if (getSocketSoLinger() != INT_VALUE_NOT_SET)
+                {
+                    socketConfigBuilder.setSoLinger(getSocketSoLinger());
+                }
+                if (getClientSoTimeout() != INT_VALUE_NOT_SET)
+                {
+                    socketConfigBuilder.setSoTimeout(getClientSoTimeout());
+                }
+                socketConfigBuilder.setTcpNoDelay(isSendTcpNoDelay());
+
+                ConnectionConfig.Builder connectionConfigBuilder = ConnectionConfig.custom();
+                if (getSendBufferSize() != INT_VALUE_NOT_SET)
+                {
+                    connectionConfigBuilder.setBufferSize(getSendBufferSize());
+                }
+                // TODO(dfeist): HTTPCLIENT - Receive buffer size is not used, only one buffer size is
+                // specified.
+                // if (getSendBufferSize() != INT_VALUE_NOT_SET)
+                // {
+                // params.setSendBufferSize(getSendBufferSize());
+                // }
+
+                PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(
+                    getConnectionSocketFactoryRegistry());
+                connManager.setDefaultConnectionConfig(connectionConfigBuilder.build());
+                connManager.setDefaultSocketConfig(socketConfigBuilder.build());
+                connManager.setMaxTotal(dispatchers.getMaxTotal());
+                connManager.setDefaultMaxPerRoute(dispatchers.getMaxTotal());
+                clientConnectionManager = connManager;
+
+                String prop = System.getProperty("mule.http.disableCleanupThread");
+                disableCleanupThread = prop != null && prop.equals("true");
+                if (!disableCleanupThread)
+                {
+                    connectionCleaner = new IdleConnectionTimeoutThread();
+                    connectionCleaner.setName("HttpClient-connection-cleaner-" + getName());
+                    connectionCleaner.addConnectionManager(clientConnectionManager);
+                    connectionCleaner.start();
+                }
             }
-            if (getClientSoTimeout() != INT_VALUE_NOT_SET)
+            catch (Exception e)
             {
-                socketConfigBuilder.setSoTimeout(getClientSoTimeout());
+                throw new InitialisationException(e, this);
             }
-
-            ConnectionConfig.Builder connectionConfigBuilder = ConnectionConfig.custom();
-            if (getReceiveBufferSize() != INT_VALUE_NOT_SET)
-            {
-                connectionConfigBuilder.setBufferSize(getReceiveBufferSize());
-            }
-            // if (getConnectionTimeout() != INT_VALUE_NOT_SET)
-            // {
-            // connectionConfigBuilder.setConnectionTimeout(getConnectionTimeout());
-            // }
-            // else
-            // {
-            // connectionConfigBuilder.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-            // }
-            // if (getSendBufferSize() != INT_VALUE_NOT_SET)
-            // {
-            // params.setSendBufferSize(getSendBufferSize());
-            // }
-
-            PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
-            connManager.setDefaultConnectionConfig(connectionConfigBuilder.build());
-            connManager.setDefaultSocketConfig(socketConfigBuilder.build());
-            clientConnectionManager = connManager;
-
-            // String prop = System.getProperty("mule.http.disableCleanupThread");
-            // disableCleanupThread = prop != null && prop.equals("true");
-            // if (!disableCleanupThread)
-            // {
-            // connectionCleaner = new IdleConnectionTimeoutThread();
-            // connectionCleaner.setName("HttpClient-connection-cleaner-" + getName());
-            // connectionCleaner.addConnectionManager(clientConnectionManager);
-            // connectionCleaner.start();
-            // }
-            //
-            //
-            // params.setTcpNoDelay(isSendTcpNoDelay());
-            // params.setMaxTotalConnections(dispatchers.getMaxTotal());
-            // params.setDefaultMaxConnectionsPerHost(dispatchers.getMaxTotal());
-            //
-            //
-            // clientConnectionManager.setParams(params);
         }
         // connection manager must be created during initialization due that devkit requires the connection
         // manager before start phase.
@@ -270,24 +289,29 @@ public class HttpConnector extends TcpConnector
         }
     }
 
+    protected Registry<ConnectionSocketFactory> getConnectionSocketFactoryRegistry()
+        throws GeneralSecurityException
+    {
+        return RegistryBuilder.<ConnectionSocketFactory> create()
+            .register("http", PlainConnectionSocketFactory.getSocketFactory())
+            .build();
+    }
+
     @Override
     protected void doDispose()
     {
-        // TODO(pablo.kraan): HTTPCLIENT - fix this
-        // if (!disableCleanupThread)
-        // {
-        // connectionCleaner.shutdown();
-        //
-        // if (!muleContext.getConfiguration().isStandalone())
-        // {
-        // MultiThreadedHttpConnectionManager.shutdownAll();
-        // }
-        // }
+        if (!disableCleanupThread)
+        {
+            connectionCleaner.shutdown();
+
+        }
         if (this.connectionManager != null)
         {
             connectionManager.dispose();
             connectionManager = null;
         }
+        clientConnectionManager.shutdown();
+        clientConnectionManager = null;
         super.doDispose();
     }
 
@@ -450,30 +474,36 @@ public class HttpConnector extends TcpConnector
 
     protected HttpClient doClientConnect() throws Exception
     {
-        // TODO(pablo.kraan): HTTPCLIENT - fix this
-        // HttpState state = new HttpState();
-        //
-        // if (getProxyUsername() != null)
-        // {
-        // Credentials credentials;
-        // if (isProxyNtlmAuthentication())
-        // {
-        // credentials = new NTCredentials(getProxyUsername(), getProxyPassword(), getProxyHostname(), "");
-        // }
-        // else
-        // {
-        // credentials = new UsernamePasswordCredentials(getProxyUsername(), getProxyPassword());
-        // }
-        //
-        // AuthScope authscope = new AuthScope(getProxyHostname(), getProxyPort());
-        //
-        // state.setProxyCredentials(authscope, credentials);
-        // }
-        //
-        // TODO(pablo.kraan): HTTPCLIENT - improve client creation
-        HttpClient client = HttpClients.custom().setConnectionManager(clientConnectionManager).build();
+        CredentialsProvider credsProvider = new BasicCredentialsProvider();
 
-        // client.setState(state);
+        if (getProxyUsername() != null)
+        {
+
+            if (isProxyNtlmAuthentication())
+            {
+                credsProvider.setCredentials(new AuthScope(getProxyHostname(), getProxyPort()),
+                    new NTCredentials(getProxyUsername() + "/" + getProxyPassword()));
+            }
+            else
+            {
+                credsProvider.setCredentials(new AuthScope(getProxyHostname(), getProxyPort()),
+                    new UsernamePasswordCredentials(getProxyUsername(), getProxyPassword()));
+            }
+        }
+
+        Registry<AuthSchemeProvider> authSchemeRegistry = RegistryBuilder.<AuthSchemeProvider> create()
+            .register(AuthSchemes.NTLM, new JCIFSNTLMSchemeFactory())
+            .register(AuthSchemes.BASIC, new BasicSchemeFactory())
+            .register(AuthSchemes.DIGEST, new DigestSchemeFactory())
+            .register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory())
+            .register(AuthSchemes.KERBEROS, new KerberosSchemeFactory())
+            .build();
+
+        HttpClient client = HttpClients.custom()
+            .setDefaultCredentialsProvider(credsProvider)
+            .setConnectionManager(clientConnectionManager)
+            .setDefaultAuthSchemeRegistry(authSchemeRegistry)
+            .build();
 
         return client;
     }

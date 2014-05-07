@@ -7,6 +7,7 @@
 package org.mule.transport.http.functional;
 
 import static org.junit.Assert.assertEquals;
+
 import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.transport.http.HttpConstants;
@@ -15,6 +16,7 @@ import org.mule.util.ClassUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.LaxRedirectStrategy;
@@ -132,7 +134,7 @@ public class StaticResourcesMPFunctionalTestCase extends FunctionalTestCase
     private void request(String url, boolean followRedirects) throws Exception
     {
         HttpGet method = new HttpGet(url);
-        HttpClientBuilder custom = HttpClients.custom();
+        HttpClientBuilder custom = HttpClients.custom().setHostnameVerifier(SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
         if (followRedirects)
         {
             custom.setRedirectStrategy(new LaxRedirectStrategy());

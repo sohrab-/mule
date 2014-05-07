@@ -26,6 +26,12 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+
 /**
  * <code>HttpsConnector</code> provides Secure http connectivity on top of what is
  * already provided with the Mule {@link org.mule.transport.http.HttpConnector}.
@@ -77,6 +83,18 @@ public class HttpsConnector extends HttpConnector implements TlsDirectKeyStore,
             throw new InitialisationException(e, this);
         }
         super.doInitialise();
+    }
+
+    protected Registry<ConnectionSocketFactory> getConnectionSocketFactoryRegistry()
+        throws GeneralSecurityException
+    {
+        return RegistryBuilder.<ConnectionSocketFactory> create()
+            .register("http", PlainConnectionSocketFactory.getSocketFactory())
+            .register(
+                "https",
+                new SSLConnectionSocketFactory(getSslSocketFactory(),
+                    SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER))
+            .build();
     }
 
     @Override

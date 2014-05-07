@@ -16,6 +16,9 @@ import java.util.Iterator;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.NameValuePair;
+import org.apache.http.impl.io.ChunkedInputStream;
+import org.apache.http.impl.io.HttpTransportMetricsImpl;
+import org.apache.http.impl.io.SessionInputBufferImpl;
 import org.apache.http.message.HeaderGroup;
 
 /**
@@ -56,9 +59,9 @@ public class HttpRequest
             {
                 if (transferEncoding.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
                 {
-                    //TODO(pablo.kraan): HTTPCLIENT - use ChuckedInputStream
-                    //in = new ChunkedInputStream()
-                    //in = new ChunkedInputStream(in);
+                    SessionInputBufferImpl sessionInputBuffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 4096);
+                    sessionInputBuffer.bind(in);
+                    in = new ChunkedInputStream(sessionInputBuffer);
                 }
             }
             else if (contentLength != null)

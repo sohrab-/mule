@@ -20,9 +20,11 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
-import org.apache.commons.httpclient.ChunkedOutputStream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.http.Header;
+import org.apache.http.impl.io.ChunkedOutputStream;
+import org.apache.http.impl.io.HttpTransportMetricsImpl;
+import org.apache.http.impl.io.SessionOutputBufferImpl;
 
 /**
  * Converts an Http Response object to String. Note that the response headers are
@@ -45,7 +47,7 @@ public class HttpResponseToString extends AbstractTransformer
     {
         try
         {
-            HttpResponse response = (HttpResponse)src;
+            HttpResponse response = (HttpResponse) src;
             ByteArrayOutputStream bos = new ByteArrayOutputStream(8192);
             OutputStream outstream = bos;
             ResponseWriter writer = new ResponseWriter(outstream, encoding);
@@ -54,13 +56,13 @@ public class HttpResponseToString extends AbstractTransformer
             Iterator item = response.getHeaderIterator();
             while (item.hasNext())
             {
-                Header header = (Header)item.next();
+                Header header = (Header) item.next();
                 writer.print(header.toString());
                 writer.print(ResponseWriter.CRLF);
             }
             writer.println();
             writer.flush();
-            
+
             if (response.hasBody())
             {
                 OutputHandler handler = response.getBody();
@@ -70,15 +72,18 @@ public class HttpResponseToString extends AbstractTransformer
                     response.removeHeaders(HttpConstants.HEADER_CONTENT_LENGTH);
                     if (transferenc.getValue().indexOf(HttpConstants.TRANSFER_ENCODING_CHUNKED) != -1)
                     {
-                        outstream = new org.apache.commons.httpclient.ChunkedOutputStream(outstream);
+                        SessionOutputBufferImpl sessionOutputBuffer = new SessionOutputBufferImpl(
+                            new HttpTransportMetricsImpl(), 2048);
+                        sessionOutputBuffer.bind(outstream);
+                        outstream = new ChunkedOutputStream(2048, sessionOutputBuffer);
                     }
                 }
-            
+
                 handler.write(RequestContext.getEvent(), outstream);
-            
+
                 if (outstream instanceof ChunkedOutputStream)
                 {
-                    ((ChunkedOutputStream)outstream).finish();
+                    ((ChunkedOutputStream) outstream).finish();
                 }
             }
 
