@@ -35,6 +35,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.http.client.HttpClient;
+import org.apache.http.config.ConnectionConfig;
+import org.apache.http.config.SocketConfig;
+import org.apache.http.config.SocketConfig.Builder;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -195,64 +198,74 @@ public class HttpConnector extends TcpConnector
     protected void doInitialise() throws InitialisationException
     {
         super.doInitialise();
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
+        // TODO(pablo.kraan): HTTPCLIENT - fix this
         if (clientConnectionManager == null)
         {
-            clientConnectionManager = new PoolingHttpClientConnectionManager();
-        //    String prop = System.getProperty("mule.http.disableCleanupThread");
-        //    disableCleanupThread = prop != null && prop.equals("true");
-        //    if (!disableCleanupThread)
-        //    {
-        //        connectionCleaner = new IdleConnectionTimeoutThread();
-        //        connectionCleaner.setName("HttpClient-connection-cleaner-" + getName());
-        //        connectionCleaner.addConnectionManager(clientConnectionManager);
-        //        connectionCleaner.start();
-        //    }
-        //
-        //    HttpConnectionManagerParams params = new HttpConnectionManagerParams();
-        //    if (getSendBufferSize() != INT_VALUE_NOT_SET)
-        //    {
-        //        params.setSendBufferSize(getSendBufferSize());
-        //    }
-        //    if (getReceiveBufferSize() != INT_VALUE_NOT_SET)
-        //    {
-        //        params.setReceiveBufferSize(getReceiveBufferSize());
-        //    }
-        //    if (getClientSoTimeout() != INT_VALUE_NOT_SET)
-        //    {
-        //        params.setSoTimeout(getClientSoTimeout());
-        //    }
-        //    if (getSocketSoLinger() != INT_VALUE_NOT_SET)
-        //    {
-        //        params.setLinger(getSocketSoLinger());
-        //    }
-        //
-        //    params.setTcpNoDelay(isSendTcpNoDelay());
-        //    params.setMaxTotalConnections(dispatchers.getMaxTotal());
-        //    params.setDefaultMaxConnectionsPerHost(dispatchers.getMaxTotal());
-        //
-        //    if (getConnectionTimeout() != INT_VALUE_NOT_SET)
-        //    {
-        //        params.setConnectionTimeout(getConnectionTimeout());
-        //    }
-        //    else
-        //    {
-        //        params.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-        //    }
-        //
-        //    clientConnectionManager.setParams(params);
+            Builder socketConfigBuilder = SocketConfig.custom();
+            if (getSocketSoLinger() != INT_VALUE_NOT_SET)
+            {
+                socketConfigBuilder.setSoLinger(getSocketSoLinger());
+            }
+            if (getClientSoTimeout() != INT_VALUE_NOT_SET)
+            {
+                socketConfigBuilder.setSoTimeout(getClientSoTimeout());
+            }
+
+            ConnectionConfig.Builder connectionConfigBuilder = ConnectionConfig.custom();
+            if (getReceiveBufferSize() != INT_VALUE_NOT_SET)
+            {
+                connectionConfigBuilder.setBufferSize(getReceiveBufferSize());
+            }
+            // if (getConnectionTimeout() != INT_VALUE_NOT_SET)
+            // {
+            // connectionConfigBuilder.setConnectionTimeout(getConnectionTimeout());
+            // }
+            // else
+            // {
+            // connectionConfigBuilder.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+            // }
+            // if (getSendBufferSize() != INT_VALUE_NOT_SET)
+            // {
+            // params.setSendBufferSize(getSendBufferSize());
+            // }
+
+            PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
+            connManager.setDefaultConnectionConfig(connectionConfigBuilder.build());
+            connManager.setDefaultSocketConfig(socketConfigBuilder.build());
+            clientConnectionManager = connManager;
+
+            // String prop = System.getProperty("mule.http.disableCleanupThread");
+            // disableCleanupThread = prop != null && prop.equals("true");
+            // if (!disableCleanupThread)
+            // {
+            // connectionCleaner = new IdleConnectionTimeoutThread();
+            // connectionCleaner.setName("HttpClient-connection-cleaner-" + getName());
+            // connectionCleaner.addConnectionManager(clientConnectionManager);
+            // connectionCleaner.start();
+            // }
+            //
+            //
+            // params.setTcpNoDelay(isSendTcpNoDelay());
+            // params.setMaxTotalConnections(dispatchers.getMaxTotal());
+            // params.setDefaultMaxConnectionsPerHost(dispatchers.getMaxTotal());
+            //
+            //
+            // clientConnectionManager.setParams(params);
         }
-        //connection manager must be created during initialization due that devkit requires the connection manager before start phase.
-        //That's why it not manager only during stop/start phases and must be created also here.
+        // connection manager must be created during initialization due that devkit requires the connection
+        // manager before start phase.
+        // That's why it not manager only during stop/start phases and must be created also here.
         if (connectionManager == null)
         {
             try
             {
-                connectionManager = new org.mule.transport.http.HttpConnectionManager(this, getReceiverWorkManager());
+                connectionManager = new org.mule.transport.http.HttpConnectionManager(this,
+                    getReceiverWorkManager());
             }
             catch (MuleException e)
             {
-                throw new InitialisationException(CoreMessages.createStaticMessage("failed creating http connection manager"),this);
+                throw new InitialisationException(
+                    CoreMessages.createStaticMessage("failed creating http connection manager"), this);
             }
         }
     }
@@ -260,16 +273,16 @@ public class HttpConnector extends TcpConnector
     @Override
     protected void doDispose()
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //if (!disableCleanupThread)
-        //{
-        //    connectionCleaner.shutdown();
+        // TODO(pablo.kraan): HTTPCLIENT - fix this
+        // if (!disableCleanupThread)
+        // {
+        // connectionCleaner.shutdown();
         //
-        //    if (!muleContext.getConfiguration().isStandalone())
-        //    {
-        //        MultiThreadedHttpConnectionManager.shutdownAll();
-        //    }
-        //}
+        // if (!muleContext.getConfiguration().isStandalone())
+        // {
+        // MultiThreadedHttpConnectionManager.shutdownAll();
+        // }
+        // }
         if (this.connectionManager != null)
         {
             connectionManager.dispose();
@@ -437,31 +450,30 @@ public class HttpConnector extends TcpConnector
 
     protected HttpClient doClientConnect() throws Exception
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //HttpState state = new HttpState();
+        // TODO(pablo.kraan): HTTPCLIENT - fix this
+        // HttpState state = new HttpState();
         //
-        //if (getProxyUsername() != null)
-        //{
-        //    Credentials credentials;
-        //    if (isProxyNtlmAuthentication())
-        //    {
-        //        credentials = new NTCredentials(getProxyUsername(), getProxyPassword(), getProxyHostname(), "");
-        //    }
-        //    else
-        //    {
-        //        credentials = new UsernamePasswordCredentials(getProxyUsername(), getProxyPassword());
-        //    }
+        // if (getProxyUsername() != null)
+        // {
+        // Credentials credentials;
+        // if (isProxyNtlmAuthentication())
+        // {
+        // credentials = new NTCredentials(getProxyUsername(), getProxyPassword(), getProxyHostname(), "");
+        // }
+        // else
+        // {
+        // credentials = new UsernamePasswordCredentials(getProxyUsername(), getProxyPassword());
+        // }
         //
-        //    AuthScope authscope = new AuthScope(getProxyHostname(), getProxyPort());
+        // AuthScope authscope = new AuthScope(getProxyHostname(), getProxyPort());
         //
-        //    state.setProxyCredentials(authscope, credentials);
-        //}
+        // state.setProxyCredentials(authscope, credentials);
+        // }
         //
-        //TODO(pablo.kraan): HTTPCLIENT - improve client creation
-        HttpClient client = HttpClients.custom().build();
+        // TODO(pablo.kraan): HTTPCLIENT - improve client creation
+        HttpClient client = HttpClients.custom().setConnectionManager(clientConnectionManager).build();
 
-        //client.setState(state);
-        //client.setHttpConnectionManager(getClientConnectionManager());
+        // client.setState(state);
 
         return client;
     }
@@ -470,44 +482,49 @@ public class HttpConnector extends TcpConnector
                                             HttpClient client, ImmutableEndpoint endpoint)
             throws UnsupportedEncodingException
     {
-        //TODO(pablo.kraan): HTTPCLIENT - fix this
-        //httpMethod.setDoAuthentication(true);
-    //    client.getParams().setAuthenticationPreemptive(true);
-    //
-    //    if (event != null && event.getCredentials() != null)
-    //    {
-    //        MuleMessage msg = event.getMessage();
-    //        String authScopeHost = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.host", event.getMessageSourceURI().getHost());
-    //        int authScopePort = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.port", event.getMessageSourceURI().getPort());
-    //        String authScopeRealm = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.realm", AuthScope.ANY_REALM);
-    //        String authScopeScheme = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.scheme", AuthScope.ANY_SCHEME);
-    //        client.getState().setCredentials(
-    //                new AuthScope(authScopeHost, authScopePort, authScopeRealm, authScopeScheme),
-    //                new UsernamePasswordCredentials(event.getCredentials().getUsername(), new String(
-    //                        event.getCredentials().getPassword())));
-    //    }
-    //    else if (endpoint.getEndpointURI().getUserInfo() != null
-    //             && endpoint.getProperty(HttpConstants.HEADER_AUTHORIZATION) == null)
-    //    {
-    //        // Add User Creds
-    //        StringBuilder header = new StringBuilder(128);
-    //        header.append("Basic ");
-    //        header.append(new String(Base64.encodeBase64(endpoint.getEndpointURI().getUserInfo().getBytes(
-    //                endpoint.getEncoding()))));
-    //        httpMethod.addRequestHeader(HttpConstants.HEADER_AUTHORIZATION, header.toString());
-    //    }
-    //    //TODO MULE-4501 this sohuld be removed and handled only in the ObjectToHttpRequest transformer
-    //    else if (event != null && event.getMessage().getOutboundProperty(HttpConstants.HEADER_AUTHORIZATION) != null &&
-    //             httpMethod.getRequestHeader(HttpConstants.HEADER_AUTHORIZATION) == null)
-    //    {
-    //        String auth = event.getMessage().getOutboundProperty(HttpConstants.HEADER_AUTHORIZATION);
-    //        httpMethod.addRequestHeader(HttpConstants.HEADER_AUTHORIZATION, auth);
-    //    }
-    //    else
-    //    {
-    //        // don't use preemptive if there are no credentials to send
-    //        client.getParams().setAuthenticationPreemptive(false);
-    //    }
+        // TODO(pablo.kraan): HTTPCLIENT - fix this
+        // httpMethod.setDoAuthentication(true);
+        // client.getParams().setAuthenticationPreemptive(true);
+        //
+        // if (event != null && event.getCredentials() != null)
+        // {
+        // MuleMessage msg = event.getMessage();
+        // String authScopeHost = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.host",
+        // event.getMessageSourceURI().getHost());
+        // int authScopePort = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.port",
+        // event.getMessageSourceURI().getPort());
+        // String authScopeRealm = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.realm",
+        // AuthScope.ANY_REALM);
+        // String authScopeScheme = msg.getOutboundProperty(HTTP_PREFIX + "auth.scope.scheme",
+        // AuthScope.ANY_SCHEME);
+        // client.getState().setCredentials(
+        // new AuthScope(authScopeHost, authScopePort, authScopeRealm, authScopeScheme),
+        // new UsernamePasswordCredentials(event.getCredentials().getUsername(), new String(
+        // event.getCredentials().getPassword())));
+        // }
+        // else if (endpoint.getEndpointURI().getUserInfo() != null
+        // && endpoint.getProperty(HttpConstants.HEADER_AUTHORIZATION) == null)
+        // {
+        // // Add User Creds
+        // StringBuilder header = new StringBuilder(128);
+        // header.append("Basic ");
+        // header.append(new String(Base64.encodeBase64(endpoint.getEndpointURI().getUserInfo().getBytes(
+        // endpoint.getEncoding()))));
+        // httpMethod.addRequestHeader(HttpConstants.HEADER_AUTHORIZATION, header.toString());
+        // }
+        // //TODO MULE-4501 this sohuld be removed and handled only in the ObjectToHttpRequest transformer
+        // else if (event != null &&
+        // event.getMessage().getOutboundProperty(HttpConstants.HEADER_AUTHORIZATION) != null &&
+        // httpMethod.getRequestHeader(HttpConstants.HEADER_AUTHORIZATION) == null)
+        // {
+        // String auth = event.getMessage().getOutboundProperty(HttpConstants.HEADER_AUTHORIZATION);
+        // httpMethod.addRequestHeader(HttpConstants.HEADER_AUTHORIZATION, auth);
+        // }
+        // else
+        // {
+        // // don't use preemptive if there are no credentials to send
+        // client.getParams().setAuthenticationPreemptive(false);
+        // }
     }
 
     /**

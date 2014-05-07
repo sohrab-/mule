@@ -8,6 +8,7 @@
 package org.mule.transport.http.functional;
 
 import static org.junit.Assert.assertEquals;
+
 import org.mule.api.MuleException;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.tck.probe.PollingProber;
@@ -23,6 +24,11 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.http.Header;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.protocol.BasicHttpProcessor;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -46,6 +52,8 @@ public class HttpOutboundKeepAliveTestCase extends AbstractMockHttpServerTestCas
     private volatile int requestCount;
 
     private Prober prober = new PollingProber(2000, 100);
+    
+    private static HttpClient httpClient;
 
     public HttpOutboundKeepAliveTestCase(ConfigVariant variant, String configResources)
     {
@@ -59,6 +67,13 @@ public class HttpOutboundKeepAliveTestCase extends AbstractMockHttpServerTestCas
                 {ConfigVariant.FLOW, "http-outbound-keep-alive.xml"}});
     }
 
+    @Before
+    public void before()
+    {
+        httpClient = HttpClients.custom().setHttpProcessor(new BasicHttpProcessor())
+            .build();
+    }
+    
     @Override
     protected MockHttpServer getHttpServer()
     {

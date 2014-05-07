@@ -9,6 +9,7 @@ package org.mule.transport.http.functional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.tck.AbstractServiceAndFlowTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
@@ -22,10 +23,9 @@ import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.util.EntityUtils;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -37,6 +37,7 @@ public class Http10FunctionalTestCase extends AbstractServiceAndFlowTestCase
 {
     @Rule
     public DynamicPort dynamicPort = new DynamicPort("port1");
+    private HttpClient client;
 
     @Parameters
     public static Collection<Object[]> parameters()
@@ -53,26 +54,25 @@ public class Http10FunctionalTestCase extends AbstractServiceAndFlowTestCase
     }
 
 
-    private HttpClient setupHttpClient()
+    @Before
+    public void before()
     {
-        CloseableHttpClient minimal = HttpClients.createMinimal();
-        minimal.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_0);
-        return minimal;
+        client = HttpClients.createDefault();
     }
 
     @Test
     public void testHttp10EnforceNonChunking() throws Exception
     {
-        HttpClient client = setupHttpClient();
         HttpGet request = new HttpGet(((InboundEndpoint) muleContext.getRegistry().lookupObject("inStreaming")).getAddress());
         RequestConfig config = request.getConfig();
         request.setConfig(config);
+        request.setProtocolVersion(HttpVersion.HTTP_1_0);
         HttpResponse response = client.execute(request);
 
         String entity = new String(EntityUtils.toByteArray(response.getEntity()));
         assertEquals("hello", entity);
 
         assertNull(response.getFirstHeader(HttpConstants.HEADER_TRANSFER_ENCODING));
-        assertNotNull(request.getFirstHeader(HttpConstants.HEADER_CONTENT_LENGTH));
+        assertNotNull(response.getFirstHeader(HttpConstants.HEADER_CONTENT_LENGTH));
     }
 }

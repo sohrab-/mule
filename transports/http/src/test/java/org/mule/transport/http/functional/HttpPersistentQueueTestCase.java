@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import org.mule.api.MuleEventContext;
 import org.mule.api.MuleMessage;
 import org.mule.tck.AbstractServiceAndFlowTestCase;
@@ -20,16 +21,19 @@ import org.mule.transport.http.HttpConstants;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -80,7 +84,8 @@ public class HttpPersistentQueueTestCase extends AbstractServiceAndFlowTestCase
     {
         HttpPost method = new HttpPost("http://localhost:" + port + "/services/Echo");
         method.addHeader(HttpConstants.HEADER_CONNECTION, "close");
-        method.addHeader("foo", "bar");
+        method.setEntity(new UrlEncodedFormEntity(Collections.singletonList(new BasicNameValuePair("foo",
+            "bar"))));;
         doTestPersistentMessageDelivery(method);
     }
     private void doTestPersistentMessageDelivery(HttpUriRequest httpMethod) throws Exception

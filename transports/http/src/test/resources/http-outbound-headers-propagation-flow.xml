@@ -66,7 +66,6 @@
 				<add-message-property key="Allow" value="gzip"/>
 				<add-message-property key="Content-Encoding" value="gzip"/>
 				<add-message-property key="Content-Language" value="gzip"/>
-				<add-message-property key="Content-Length" value="gzip"/>
 				<add-message-property key="Content-Location" value="gzip"/>
 				<add-message-property key="Content-MD5" value="gzip"/>
 				<add-message-property key="Content-Range" value="gzip"/>

@@ -25,6 +25,7 @@ import java.net.SocketException;
 import java.security.cert.Certificate;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.net.ssl.HandshakeCompletedEvent;
@@ -37,6 +38,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
+import org.apache.http.impl.EnglishReasonPhraseCatalog;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicLineParser;
 
@@ -379,7 +381,8 @@ public class HttpServerConnection implements HandshakeCompletedListener
         throws IOException, HttpException
     {
         HttpResponse response = new HttpResponse();
-        response.setStatusLine(readRequest().getRequestLine().getHttpVersion(), statusCode);
+        response.setStatusLine(readRequest().getRequestLine().getHttpVersion(), statusCode,
+            EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.getDefault()));
         response.setBody(description);
         addHeadersToHttpResponse(response, headers);
         writeResponse(response);

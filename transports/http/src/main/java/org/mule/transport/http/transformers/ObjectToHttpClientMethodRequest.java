@@ -35,6 +35,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import javax.activation.DataHandler;
@@ -44,7 +47,8 @@ import javax.activation.URLDataSource;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
-import org.apache.http.HttpVersion;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -52,8 +56,8 @@ import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpTrace;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.HttpTrace;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -63,7 +67,7 @@ import org.apache.http.entity.mime.content.ByteArrayBody;
 import org.apache.http.entity.mime.content.ContentBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicLineParser;
-import org.apache.http.params.HttpParams;
+import org.apache.http.message.BasicNameValuePair;
 
 /**
  * <code>ObjectToHttpClientMethodRequest</code> transforms a MuleMessage into a
@@ -221,14 +225,17 @@ public class ObjectToHttpClientMethodRequest extends AbstractMessageTransformer
         Object src = msg.getPayload();
         if (src instanceof Map)
         {
+            List<NameValuePair> params = new ArrayList<NameValuePair>();
             for (Map.Entry<?, ?> entry : ((Map<?, ?>) src).entrySet())
             {
-                postMethod.addHeader(entry.getKey().toString(), entry.getValue().toString());
+                params.add(new BasicNameValuePair(entry.getKey().toString(), entry.getValue().toString()));
+                postMethod.setEntity(new UrlEncodedFormEntity(params));
             }
         }
         else if (bodyParameterName != null)
         {
-            postMethod.addHeader(bodyParameterName, src.toString());
+            postMethod.setEntity(new UrlEncodedFormEntity(Collections.singletonList(new BasicNameValuePair(
+                bodyParameterName, src.toString()))));;
         }
         else
         {

@@ -214,7 +214,6 @@ public class MuleMessageToHttpResponse extends AbstractMessageTransformer
         //}
 
         response.setStatusLine((HttpVersion) BasicLineParser.parseProtocolVersion(version, null), status);
-        response.setStatusLine(HttpVersion.HTTP_1_1, status);
         if (contentType != null)
         {
             response.setHeader(new BasicHeader(HttpConstants.HEADER_CONTENT_TYPE, contentType));

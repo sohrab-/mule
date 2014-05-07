@@ -8,6 +8,7 @@ package org.mule.transport.http.functional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.tck.AbstractServiceAndFlowTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
@@ -21,11 +22,13 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
+import org.apache.http.ProtocolVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.params.CoreProtocolPNames;
+import org.apache.http.protocol.BasicHttpProcessor;
+import org.apache.http.util.EntityUtils;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
@@ -43,6 +46,8 @@ public class HttpKeepAliveFunctionalTestCase extends AbstractServiceAndFlowTestC
     private static final String CLOSE = "close";
     private static final String KEEP_ALIVE = "Keep-Alive";
     private static final String EMPTY = "";
+
+    private static HttpClient httpClient;
 
     @Rule
     public DynamicPort dynamicPort1 = new DynamicPort("port1");
@@ -70,10 +75,14 @@ public class HttpKeepAliveFunctionalTestCase extends AbstractServiceAndFlowTestC
     @Parameters
     public static Collection<Object[]> parameters()
     {
-        return Arrays.asList(new Object[][] {
-                {ConfigVariant.SERVICE, "http-keep-alive-config-service.xml"},
-                {ConfigVariant.FLOW, "http-keep-alive-config-flow.xml"}
-        });
+        return Arrays.asList(new Object[][]{{ConfigVariant.SERVICE, "http-keep-alive-config-service.xml"},
+            {ConfigVariant.FLOW, "http-keep-alive-config-flow.xml"}});
+    }
+
+    @Before
+    public void before()
+    {
+        httpClient = HttpClients.custom().setHttpProcessor(new BasicHttpProcessor()).build();
     }
 
     @Test
@@ -150,85 +159,99 @@ public class HttpKeepAliveFunctionalTestCase extends AbstractServiceAndFlowTestC
 
     private void doTestKeepAliveInHttp10(String endpointAddress) throws Exception
     {
-        HttpClient httpClient = setupHttpClient(HttpVersion.HTTP_1_0);
-
-        doTestHttp(endpointAddress, EMPTY, CLOSE, httpClient);
-        doTestHttp(endpointAddress, CLOSE, CLOSE, httpClient);
-        doTestHttp(endpointAddress, KEEP_ALIVE, KEEP_ALIVE, httpClient);
+        doTestHttp(endpointAddress, EMPTY, CLOSE, HttpVersion.HTTP_1_0);
+        doTestHttp(endpointAddress, CLOSE, CLOSE, HttpVersion.HTTP_1_0);
+        doTestHttp(endpointAddress, KEEP_ALIVE, KEEP_ALIVE, HttpVersion.HTTP_1_0);
     }
 
     private void doTestNoKeepAliveInHttp10(String endpointAddress) throws Exception
     {
-        HttpClient httpClient = setupHttpClient(HttpVersion.HTTP_1_0);
-
-        doTestHttp(endpointAddress, EMPTY, CLOSE, httpClient);
-        doTestHttp(endpointAddress, CLOSE, CLOSE, httpClient);
-        doTestHttp(endpointAddress, KEEP_ALIVE, CLOSE, httpClient);
+        doTestHttp(endpointAddress, EMPTY, CLOSE, HttpVersion.HTTP_1_0);
+        doTestHttp(endpointAddress, CLOSE, CLOSE, HttpVersion.HTTP_1_0);
+        doTestHttp(endpointAddress, KEEP_ALIVE, CLOSE, HttpVersion.HTTP_1_0);
     }
 
     private void doTestKeepAliveInHttp11(String endpointAddress) throws Exception
     {
-        HttpClient httpClient = setupHttpClient(HttpVersion.HTTP_1_1);
-
-        doTestHttp(endpointAddress, EMPTY, EMPTY, httpClient);
-        doTestHttp(endpointAddress, CLOSE, CLOSE, httpClient);
-        doTestHttp(endpointAddress, KEEP_ALIVE, EMPTY, httpClient);
+        doTestHttp(endpointAddress, EMPTY, EMPTY, HttpVersion.HTTP_1_1);
+        doTestHttp(endpointAddress, CLOSE, CLOSE, HttpVersion.HTTP_1_1);
+        doTestHttp(endpointAddress, KEEP_ALIVE, EMPTY, HttpVersion.HTTP_1_1);
     }
 
     private void doTestNoKeepAliveInHttp11(String endpointAddress) throws Exception
     {
-        HttpClient httpClient = setupHttpClient(HttpVersion.HTTP_1_1);
-
-        doTestHttp(endpointAddress, EMPTY, CLOSE, httpClient);
-        doTestHttp(endpointAddress, CLOSE, CLOSE, httpClient);
-        doTestHttp(endpointAddress, KEEP_ALIVE, CLOSE, httpClient);
+        doTestHttp(endpointAddress, EMPTY, CLOSE, HttpVersion.HTTP_1_1);
+        doTestHttp(endpointAddress, CLOSE, CLOSE, HttpVersion.HTTP_1_1);
+        doTestHttp(endpointAddress, KEEP_ALIVE, CLOSE, HttpVersion.HTTP_1_1);
     }
 
-    private HttpClient setupHttpClient(HttpVersion version)
+    private void doTestHttp(String url,
+                            String inConnectionHeaderValue,
+                            String expectedConnectionHeaderValue,
+                            ProtocolVersion version) throws Exception
     {
-        CloseableHttpClient minimal = HttpClients.createMinimal();
-        minimal.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, version);
-        return minimal;
-    }
 
-    private void doTestHttp(String url, String inConnectionHeaderValue, String expectedConnectionHeaderValue, HttpClient httpClient) throws Exception
-    {
         HttpGet request = new HttpGet(url);
-        if (StringUtils.isEmpty(inConnectionHeaderValue))
-        {
-            request.removeHeaders(HttpConstants.HEADER_CONNECTION);
-        }
-        else
-        {
-            request.setHeader(HttpConstants.HEADER_CONNECTION, inConnectionHeaderValue);
-        }
+        request.setProtocolVersion(version);
+        HttpResponse response = null;
 
-        runHttpMethodAndAssertConnectionHeader(request, expectedConnectionHeaderValue, httpClient);
+        try
+        {
+            if (StringUtils.isEmpty(inConnectionHeaderValue))
+            {
+                request.removeHeaders(HttpConstants.HEADER_CONNECTION);
+            }
+            else
+            {
+                request.setHeader(HttpConstants.HEADER_CONNECTION, inConnectionHeaderValue);
+            }
 
-        // the connection should be still open, send another request and terminate the connection
-        request = new HttpGet(url);
-        request.setHeader(HttpConstants.HEADER_CONNECTION, CLOSE);
-        HttpResponse response = httpClient.execute(request);
-        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+            runHttpMethodAndAssertConnectionHeader(request, expectedConnectionHeaderValue);
+
+            // the connection should be still open, send another request and terminate the connection
+            request = new HttpGet(url);
+            request.setHeader(HttpConstants.HEADER_CONNECTION, CLOSE);
+            response = httpClient.execute(request);
+            assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        }
+        finally
+        {
+            if (response != null && response.getEntity() != null)
+            {
+                EntityUtils.consumeQuietly(response.getEntity());
+            }
+        }
     }
 
-    private void runHttpMethodAndAssertConnectionHeader(HttpGet request, String expectedConnectionHeaderValue, HttpClient httpClient) throws Exception
+    private void runHttpMethodAndAssertConnectionHeader(HttpGet request, String expectedConnectionHeaderValue)
+        throws Exception
     {
-        HttpResponse response = httpClient.execute(request);
-        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        HttpResponse response = null;
+        try
+        {
+            response = httpClient.execute(request);
+            assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
 
-        String connectionHeader;
-        if (httpClient.getParams().getParameter(CoreProtocolPNames.PROTOCOL_VERSION).equals(HttpVersion.HTTP_1_0))
-        {
-            connectionHeader = response.getFirstHeader(HttpConstants.HEADER_CONNECTION).getValue();
-            assertNotNull(connectionHeader);
+            String connectionHeader;
+            if (request.getProtocolVersion().equals(HttpVersion.HTTP_1_0))
+            {
+                connectionHeader = response.getFirstHeader(HttpConstants.HEADER_CONNECTION).getValue();
+                assertNotNull(connectionHeader);
+            }
+            else
+            {
+                Header responseHeader = response.getFirstHeader(HttpConstants.HEADER_CONNECTION);
+                connectionHeader = responseHeader != null ? responseHeader.getValue() : EMPTY;
+            }
+            assertEquals(expectedConnectionHeaderValue, connectionHeader);
         }
-        else
+        finally
         {
-            Header responseHeader = request.getFirstHeader(HttpConstants.HEADER_CONNECTION);
-            connectionHeader = responseHeader != null ? responseHeader.getValue() : EMPTY;
+            if (response != null && response.getEntity() != null)
+            {
+                EntityUtils.consumeQuietly(response.getEntity());
+            }
         }
-        assertEquals(expectedConnectionHeaderValue, connectionHeader);
     }
 
     private InboundEndpoint getEndpoint(String endpointName)
@@ -241,5 +264,3 @@ public class HttpKeepAliveFunctionalTestCase extends AbstractServiceAndFlowTestC
         return getEndpoint(endpointName).getAddress();
     }
 }
-
-

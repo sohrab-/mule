@@ -25,6 +25,7 @@ import org.mule.message.DefaultExceptionPayload;
 import org.mule.transformer.TransformerChain;
 import org.mule.transport.AbstractMessageDispatcher;
 import org.mule.transport.http.transformers.ObjectToHttpClientMethodRequest;
+import org.mule.transport.tcp.TcpConnector;
 import org.mule.util.StringUtils;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
 
 /**
  * <code>HttpClientMessageDispatcher</code> dispatches Mule events over HTTP.
@@ -120,15 +122,15 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
 
         httpConnector.setupClientAuthorization(event, httpMethod, client, endpoint);
 
+        org.apache.http.HttpResponse response = null;
+
         try
         {
-            org.apache.http.HttpResponse response = execute(event, httpMethod);
+            response = execute(event, httpMethod);
 
             if (returnException(event, response))
             {
-                //TODO(pablo.kraan): HTTPCLIENT - is this correct?
                 logger.error(response.getEntity().toString());
-                //logger.error(httpMethod.getResponseBodyAsString());
 
                 Exception cause = new Exception(String.format("Http call returned a status of: %1d %1s",
                                                               response.getStatusLine().getStatusCode(), response.getStatusLine().getReasonPhrase()));
@@ -144,8 +146,10 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
         }
         finally
         {
-            //TODO(pablo.kraan): HTTPCLIENT - fix this
-            //httpMethod.releaseConnection();
+            if (response != null)
+            {
+                EntityUtils.consumeQuietly(response.getEntity());
+            }
         }
     }
 
@@ -226,9 +230,11 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
         if (httpMethod instanceof HttpRequestBase)
         {
             RequestConfig config = RequestConfig.custom()
-                    .setSocketTimeout(endpoint.getResponseTimeout())
-                    .setRedirectsEnabled("true".equalsIgnoreCase((String)endpoint.getProperty("followRedirects")))
-                    .build();
+                .setSocketTimeout(endpoint.getResponseTimeout())
+                .setConnectTimeout(((TcpConnector) connector).getConnectionTimeout())
+                .setRedirectsEnabled(
+                    "true".equalsIgnoreCase((String) endpoint.getProperty("followRedirects")))
+                .build();
             ((HttpRequestBase) httpMethod).setConfig(config);
         }
 
