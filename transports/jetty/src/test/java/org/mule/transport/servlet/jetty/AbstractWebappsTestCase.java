@@ -7,6 +7,7 @@
 package org.mule.transport.servlet.jetty;
 
 import static org.junit.Assert.assertEquals;
+
 import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.SystemProperty;
 import org.mule.util.ClassUtils;
@@ -15,10 +16,11 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpStatus;
-import org.apache.http.client.methods.GetMethod;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.Rule;
 
 public abstract class AbstractWebappsTestCase extends FunctionalTestCase
@@ -54,10 +56,10 @@ public abstract class AbstractWebappsTestCase extends FunctionalTestCase
 
     protected void sendRequestAndAssertCorrectResponse(String url) throws IOException
     {
-        GetMethod method = new GetMethod(url);
-        int rc = new HttpClient().executeMethod(method);
-        assertEquals(HttpStatus.SC_OK, rc);
-        assertEquals("Hello", method.getResponseBodyAsString());
+        HttpGet method = new HttpGet(url);
+        HttpResponse response = HttpClients.createMinimal().execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertEquals("Hello", response.getEntity().toString());
     }
 }
 

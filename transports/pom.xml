@@ -25,12 +25,16 @@
 <!--        <module>ftp</module>-->
         <module>http</module>
 <!--        <module>jdbc</module>
+-->
         <module>jetty</module>
+<!--
         <module>jms</module>
         <module>multicast</module>
         <module>quartz</module>
         <module>rmi</module>
+-->
         <module>servlet</module>
+<!--
         <module>sftp</module>
         <module>ssl</module>
         <module>stdio</module>

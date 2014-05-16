@@ -6,6 +6,9 @@
  */
 package org.mule.transport.servlet;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import org.mule.DefaultMuleMessage;
 import org.mule.api.MuleContext;
 import org.mule.tck.junit4.AbstractMuleTestCase;
@@ -14,11 +17,8 @@ import org.mule.transport.http.HttpResponse;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.http.client.Header;
+import org.apache.http.message.BasicHeader;
 import org.junit.Test;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 public class MuleReceiverServletTestCase extends AbstractMuleTestCase
 {
@@ -31,7 +31,7 @@ public class MuleReceiverServletTestCase extends AbstractMuleTestCase
         String headerValue = "value";
 
         HttpResponse httpResponse = new HttpResponse();
-        httpResponse.addHeader(new Header(KEY, headerValue));
+        httpResponse.addHeader(new BasicHeader(KEY, headerValue));
 
         HttpServletResponse servletResponse = createServletResponseAndWriteResponse(httpResponse);
         verify(servletResponse).addHeader(KEY, headerValue);
@@ -44,8 +44,8 @@ public class MuleReceiverServletTestCase extends AbstractMuleTestCase
         String secondValue = "value2";
 
         HttpResponse httpResponse = new HttpResponse();
-        httpResponse.addHeader(new Header(KEY, firstValue));
-        httpResponse.addHeader(new Header(KEY, secondValue));
+        httpResponse.addHeader(new BasicHeader(KEY, firstValue));
+        httpResponse.addHeader(new BasicHeader(KEY, secondValue));
 
         HttpServletResponse servletResponse = createServletResponseAndWriteResponse(httpResponse);
         verify(servletResponse).addHeader(KEY, firstValue);
@@ -68,7 +68,7 @@ public class MuleReceiverServletTestCase extends AbstractMuleTestCase
         String contentType = "foo/bar";
 
         HttpResponse httpResponse = new HttpResponse();
-        httpResponse.addHeader(new Header(HttpConstants.HEADER_CONTENT_TYPE, contentType));
+        httpResponse.addHeader(new BasicHeader(HttpConstants.HEADER_CONTENT_TYPE, contentType));
 
         HttpServletResponse servletResponse = createServletResponseAndWriteResponse(httpResponse);
         verify(servletResponse).setContentType(contentType);

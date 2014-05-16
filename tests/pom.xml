@@ -12,13 +12,13 @@
     <name>Mule Tests</name>
 
     <modules>
-        <module>functional</module>
-        <module>infrastructure</module>
+        <!--<module>functional</module>-->
+        <!--<module>infrastructure</module>-->
         <module>performance</module>
-        <module>archetypes</module>
-        <module>integration</module>
-        <module>integration-jdk6</module>
-        <module>integration-axis</module>
+        <!--<module>archetypes</module>-->
+        <!--<module>integration</module>-->
+        <!--<module>integration-jdk6</module>-->
+        <!--<module>integration-axis</module>-->
     </modules>
 
     <properties>

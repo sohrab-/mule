@@ -6,6 +6,9 @@
  */
 package org.mule.transport.servlet.jetty;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.mule.tck.junit4.AbstractMuleContextTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.transport.servlet.JarResourceServlet;
@@ -13,16 +16,14 @@ import org.mule.transport.servlet.jetty.util.EmbeddedJettyServer;
 
 import java.io.IOException;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpStatus;
-import org.apache.http.client.methods.GetMethod;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class JarResourceServletTestCase extends AbstractMuleContextTestCase
 {
@@ -83,9 +84,9 @@ public class JarResourceServletTestCase extends AbstractMuleContextTestCase
     {
         String url = String.format("http://localhost:%d/mule-resource/files/%s", port1.getNumber(),
             resource);
-        GetMethod method = new GetMethod(url);
-        int rc = new HttpClient().executeMethod(method);
-        assertEquals(HttpStatus.SC_OK, rc);
-        return method.getResponseBodyAsString();
+        HttpGet method = new HttpGet(url);
+        HttpResponse response = HttpClients.createMinimal().execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        return response.getEntity().toString();
     }
 }

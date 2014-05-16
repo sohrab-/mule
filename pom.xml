@@ -59,7 +59,7 @@
         <!--<module>patterns</module>-->
         <!--<module>tools</module>&ndash;&gt;-->
         <module>transports</module>
-        <!--<module>tests</module>-->
+        <module>tests</module>
     </modules>
 
     <properties>

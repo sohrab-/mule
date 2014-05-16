@@ -15,10 +15,11 @@ import org.mule.tck.functional.FunctionalTestComponent;
 import org.mule.tck.junit4.FunctionalTestCase;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.transport.http.HttpConstants;
-import org.mule.transport.http.PatchMethod;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpStatus;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPatch;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -56,9 +57,9 @@ public class JettyPatchMethodTestCase extends FunctionalTestCase
     public void testPatch() throws Exception
     {
         String url = String.format("http://localhost:%d/component", port1.getNumber());
-        PatchMethod method = new PatchMethod(url);
-        int status = new HttpClient().executeMethod(method);
-        assertEquals(HttpStatus.SC_OK, status);
+        HttpPatch method = new HttpPatch(url);
+        HttpResponse response = HttpClients.createMinimal().execute(method);
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
     }
 
     private static class CheckMessageCallback implements EventCallback
