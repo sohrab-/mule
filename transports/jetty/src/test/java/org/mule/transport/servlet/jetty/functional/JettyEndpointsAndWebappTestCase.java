@@ -15,9 +15,10 @@ import org.mule.transport.servlet.jetty.AbstractWebappsTestCase;
 
 import java.io.IOException;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -77,9 +78,9 @@ public class JettyEndpointsAndWebappTestCase extends AbstractWebappsTestCase
 
     private void assertNotFound(String url) throws IOException
     {
-        GetMethod method = new GetMethod(url);
-        int statusCode = new HttpClient().executeMethod(method);
-        assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
+        HttpGet method = new HttpGet(url);
+        HttpResponse response = HttpClients.createMinimal().execute(method);
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusLine().getStatusCode());
     }
 
 }
