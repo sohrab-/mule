@@ -98,7 +98,8 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
 
         muleContext = new DefaultMuleContextFactory().createMuleContext();
 
-        HttpConnector httpConnector = new TestHttpConnector(muleContext, false);
+        HttpConnector httpConnector = new TestHttpConnector(muleContext, staleCheckEnabled,
+            singletonDispatcher);
         ThreadingProfile tp = new ChainedThreadingProfile();
         tp.setMaxThreadsActive(550);
         httpConnector.setDispatcherThreadingProfile(tp);
@@ -229,10 +230,13 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
         private boolean singletonDispatcher;
         protected MessageDispatcher singletonDispatcherInstance;
 
-        public TestHttpConnector(MuleContext context, boolean staleCheckingEnabled)
+        public TestHttpConnector(MuleContext context,
+                                 boolean staleCheckingEnabled,
+                                 boolean singletonDispatcher)
         {
             super(context);
             this.staleCheckingEnabled = staleCheckingEnabled;
+            this.singletonDispatcher = singletonDispatcher;
         }
 
         @Override
