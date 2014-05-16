@@ -226,7 +226,7 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
 
     static class TestHttpConnector extends HttpConnector
     {
-        private boolean staleCheckingEnabled = true;
+        private boolean staleCheckingEnabled;
         private boolean singletonDispatcher;
         protected MessageDispatcher singletonDispatcherInstance;
 
@@ -244,6 +244,7 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
         {
             super.doInitialise();
             clientConnectionManager.getParams().setStaleCheckingEnabled(staleCheckingEnabled);
+            clientConnectionManager.getParams().setConnectionTimeout(10000);
             if (singletonDispatcher)
             {
                 clientConnectionManager.getParams().setMaxTotalConnections(550);
@@ -281,13 +282,8 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
             {
                 singletonDispatcherInstance = getDispatcherFactory().create(endpoint);
                 applyLifecycle(singletonDispatcherInstance);
-                return singletonDispatcherInstance;
             }
-            else
-            {
-                return super.createDispatcherMessageProcessor(endpoint);
-            }
-
+            return super.createDispatcherMessageProcessor(endpoint);
         }
 
         protected void applyLifecycle(MessageDispatcher dispatcher) throws MuleException
