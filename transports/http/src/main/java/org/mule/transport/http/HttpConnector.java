@@ -211,6 +211,8 @@ public class HttpConnector extends TcpConnector
     private boolean disableCleanupThread;
 
     private org.mule.transport.http.HttpConnectionManager connectionManager;
+    
+    private boolean staleConnectionCheckEnabled = true;
 
     public HttpConnector(MuleContext context)
     {
@@ -717,5 +719,15 @@ public class HttpConnector extends TcpConnector
     {
         logger.warn("keepSendSocketOpen attribute is deprecated, use keepAlive in the outbound endpoint instead");
         super.setKeepSendSocketOpen(keepSendSocketOpen);
+    }
+
+    public boolean isStaleConnectionCheckEnabled()
+    {
+        return staleConnectionCheckEnabled;
+    }
+
+    public void setStaleConnectionCheckEnabled(boolean staleConnectionCheckEnabled)
+    {
+        this.staleConnectionCheckEnabled = staleConnectionCheckEnabled;
     }
 }

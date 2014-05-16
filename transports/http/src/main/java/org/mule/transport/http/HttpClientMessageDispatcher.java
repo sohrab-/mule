@@ -232,6 +232,7 @@ public class HttpClientMessageDispatcher extends AbstractMessageDispatcher
         {
             RequestConfig config = RequestConfig.custom()
                 .setSocketTimeout(endpoint.getResponseTimeout())
+                .setStaleConnectionCheckEnabled(((HttpConnector) connector).isStaleConnectionCheckEnabled())
                 .setConnectTimeout(((TcpConnector) connector).getConnectionTimeout())
                 .setRedirectsEnabled(
                     "true".equalsIgnoreCase((String) endpoint.getProperty("followRedirects")))

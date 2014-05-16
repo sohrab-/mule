@@ -26,7 +26,6 @@ import org.mule.config.ChainedThreadingProfile;
 import org.mule.construct.Flow;
 import org.mule.context.DefaultMuleContextFactory;
 import org.mule.tck.junit4.AbstractMuleTestCase;
-import org.mule.transport.http.ntlm.JCIFSNTLMSchemeFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,25 +37,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.http.auth.AuthSchemeProvider;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.NTCredentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.AuthSchemes;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.ConnectionConfig;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.config.SocketConfig.Builder;
-import org.apache.http.impl.auth.BasicSchemeFactory;
-import org.apache.http.impl.auth.DigestSchemeFactory;
-import org.apache.http.impl.auth.KerberosSchemeFactory;
-import org.apache.http.impl.auth.SPNegoSchemeFactory;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.databene.contiperf.PerfTest;
 import org.databene.contiperf.junit.ContiPerfRule;
@@ -116,12 +99,13 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
 
         muleContext = new DefaultMuleContextFactory().createMuleContext();
 
-        HttpConnector httpConnector = new TestHttpConnector(muleContext, staleCheckEnabled,
-            singletonDispatcher);
+        HttpConnector httpConnector = new TestHttpConnector(muleContext, singletonDispatcher);
         ThreadingProfile tp = new ChainedThreadingProfile();
         tp.setMaxThreadsActive(550);
         httpConnector.setDispatcherThreadingProfile(tp);
         httpConnector.setSendTcpNoDelay(true);
+        httpConnector.setConnectionTimeout(10000);
+        httpConnector.setStaleConnectionCheckEnabled(staleCheckEnabled);
         muleContext.getRegistry().registerConnector(httpConnector);
 
         EndpointBuilder builder = muleContext.getEndpointFactory().getEndpointBuilder(
@@ -240,16 +224,14 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
 
     static class TestHttpConnector extends HttpConnector
     {
-        private boolean staleCheckingEnabled;
         private boolean singletonDispatcher;
         protected MessageDispatcher singletonDispatcherInstance;
 
         public TestHttpConnector(MuleContext context,
-                                 boolean staleCheckingEnabled,
-                                 boolean singletonDispatcher)
+
+        boolean singletonDispatcher)
         {
             super(context);
-            this.staleCheckingEnabled = staleCheckingEnabled;
             this.singletonDispatcher = singletonDispatcher;
         }
 
@@ -308,47 +290,6 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
                     throw new InitialisationException(e, this);
                 }
             }
-        }
-
-        protected HttpClient doClientConnect() throws Exception
-        {
-            CredentialsProvider credsProvider = new BasicCredentialsProvider();
-
-            if (getProxyUsername() != null)
-            {
-
-                if (isProxyNtlmAuthentication())
-                {
-                    credsProvider.setCredentials(new AuthScope(getProxyHostname(), getProxyPort()),
-                        new NTCredentials(getProxyUsername() + "/" + getProxyPassword()));
-                }
-                else
-                {
-                    credsProvider.setCredentials(new AuthScope(getProxyHostname(), getProxyPort()),
-                        new UsernamePasswordCredentials(getProxyUsername(), getProxyPassword()));
-                }
-            }
-
-            Registry<AuthSchemeProvider> authSchemeRegistry = RegistryBuilder.<AuthSchemeProvider> create()
-                .register(AuthSchemes.NTLM, new JCIFSNTLMSchemeFactory())
-                .register(AuthSchemes.BASIC, new BasicSchemeFactory())
-                .register(AuthSchemes.DIGEST, new DigestSchemeFactory())
-                .register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory())
-                .register(AuthSchemes.KERBEROS, new KerberosSchemeFactory())
-                .build();
-
-            HttpClient client = HttpClients.custom()
-                .setDefaultCredentialsProvider(credsProvider)
-                .setConnectionManager(clientConnectionManager)
-                .setDefaultAuthSchemeRegistry(authSchemeRegistry)
-                .setDefaultRequestConfig(
-                    RequestConfig.custom()
-                        .setStaleConnectionCheckEnabled(staleCheckingEnabled)
-                        .setConnectTimeout(10000)
-                        .build())
-                .build();
-
-            return client;
         }
 
         @Override
