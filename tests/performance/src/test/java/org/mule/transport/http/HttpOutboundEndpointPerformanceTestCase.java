@@ -44,7 +44,7 @@ import org.databene.contiperf.junit.ContiPerfRule;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.nio.BlockingChannelConnector;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
@@ -89,7 +89,7 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
     {
         payload = createPayload(2048);
 
-        final BlockingChannelConnector connector = new BlockingChannelConnector();
+        final SelectChannelConnector connector = new SelectChannelConnector();
         jetty = new Server();
         jetty.addConnector(connector);
         jetty.setHandler(new EchoHandler());
@@ -120,6 +120,7 @@ public class HttpOutboundEndpointPerformanceTestCase extends AbstractMuleTestCas
     public void after() throws Exception
     {
         jetty.stop();
+        jetty.join();
         endpoint.getConnector().stop();
         muleContext.dispose();
     }
