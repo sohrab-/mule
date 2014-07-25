@@ -11,7 +11,7 @@ import groovy.transform.AutoClone
 
 @Field String GET_PLUGIN = "org.apache.maven.plugins:maven-dependency-plugin:2.8:get"
 @Field long FIVE_MINUTES = 300000
-@FIELD int INVALID_ARGUMENTS = 1
+@Field int INVALID_ARGUMENTS = 1
 @Field String help = '\nDeploys to a remote Maven repository Mule CE and EE artifacts including distributions, poms, jars, test jars, javadoc jars and source jars.\n'
 @Field String ceRepoId
 @Field String ceRepoUrl
@@ -62,6 +62,7 @@ def deployJars()
 {
     deployToRemote(ceRepoUrl, ceRepoId, 'org.mule', 'mule', version, 'pom')
     deployToRemote(ceRepoUrl, ceRepoId, 'org.mule', 'mule-core', version, 'jar')
+    deployToRemote(ceRepoUrl, ceRepoId, 'org.mule.common', 'mule-common', version, 'jar')
     [
             'examples',
             'modules',
@@ -122,7 +123,7 @@ protected void deployToRemote(String repoUrl, String repoId, String groupId, Str
         if (getDependency(optional, "target/${it}") && getDependency(signature, "target/${it}-signature"))
         {
             assert deployFile(optional, 'target/pom', "target/${it}", repoUrl, repoId);
-            assert deployFile(optional, 'target/pom', "target/${it}-signature", repoUrl, repoId);
+            assert deployFile(signature, 'target/pom', "target/${it}-signature", repoUrl, repoId);
         }
     }
 }
